@@ -9,7 +9,6 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "test": "node --test tests/probar_conocimiento.test.js"
+    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js"
   }
 }
-

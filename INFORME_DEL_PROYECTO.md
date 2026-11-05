@@ -12,98 +12,85 @@ Con qué se conecta: Es el documento principal de lectura humana; explica qué h
 
 ## (a) ¿Qué es CallVoxky y para qué sirve?
 
-**CallVoxky** es una plataforma de telefonía inteligente pensada para que puedas ofrecerla como un servicio mensual a distintas empresas (**SaaS** — *Software como Servicio: un programa tuyo que otras empresas usan pagándote una cuota al mes*).
+**CallVoxky** es un sistema comercial de agentes virtuales de atención al cliente por voz, diseñado como **MVP Multidemo** (**MVP** — *Producto Mínimo Viable: primera versión funcional lista para enseñar a clientes reales y en tu portafolio*).
 
-Su objetivo es que cuando un cliente llame por teléfono a una clínica, tienda, taller o despacho, le atienda al instante un **empleado virtual con voz humana** que:
-1. Escucha y habla de forma fluida, sin silencios incómodos.
-2. Si el cliente le interrumpe a mitad de una frase, **se calla inmediatamente y escucha**, igual que haría una persona educada.
-3. Responde dudas sobre precios, horarios, dirección, servicios o políticas **usando única y exclusivamente los documentos autorizados de esa empresa**.
-4. Si le preguntan algo que no aparece en los documentos de la empresa, reconoce honestamente que no puede confirmarlo y nunca inventa datos.
-5. Puede atender a varias personas llamando al mismo tiempo sin mezclar jamás una conversación con otra ni los datos de la "Empresa A" con los de la "Empresa B".
+Su objetivo es que puedas crear y compartir **demostraciones personalizadas** para distintas empresas (una clínica dental, un taller mecánico, una inmobiliaria, un despacho) con su propio enlace e identificador (`demoId`), operando en dos modalidades:
+1. **Demo Simulada (Coste 0 €):** Usa la información oficial de la empresa y la voz integrada del navegador sin gastar saldo de inteligencia artificial.
+2. **Demo Real (Voz IA en vivo):** Conversación fluida con **GPT-Live (`gpt-live-1`)** y el razonador **GPT-6 Luna (`gpt-6-luna`)**, capaz de escuchar si el cliente le interrumpe y responder exclusivamente con datos verificados de esa empresa.
+
+Además, cada demostración puede prepararse de forma **manual** o **automática** (investigando datos públicos de la empresa), pero **siempre exige revisión humana obligatoria (`revisadoPorHumano: true`)** antes de pasar de estado `borrador` a `publicada`.
 
 ---
 
 ## (b) ¿Cómo funciona por dentro? (Explicado con un ejemplo de la vida diaria)
 
-Imagina la recepción de un gran edificio de oficinas donde trabajan dos especialistas en equipo para cada llamada:
+Imagina un centro de exposiciones con varios stands independientes, uno por cada empresa a la que quieres mostrarle tu producto:
 
-1. **El Recepcionista de Voz (`gpt-live-1`):**
-   Es quien tiene puestos los auriculares hablando con el cliente. Tiene una voz muy natural, sabe escuchar mientras habla (**Full Duplex** — *capacidad de escuchar y hablar al mismo tiempo, como en una llamada real*) y se encarga de llevar el ritmo amable de la charla.
-2. **El Bibliotecario Experto (`gpt-6-luna`):**
-   Está sentado al lado con el manual oficial de la empresa abierto. Cuando el cliente hace una pregunta concreta (por ejemplo: *"¿Cuánto cuesta la limpieza dental y qué horario tenéis los viernes?"*), el Recepcionista de Voz genera su señal oficial `<|SpawnThinking|>` (**Delegación / `Responses Delegation`** — *pedirle al cerebro experto que busque un dato mientras la llamada sigue activa*).
-3. **Nuestro Servidor Vigilante (`Node.js` conectado por *Sideband*):**
-   - **Sideband** (*canal lateral de control*): Es un cable por donde nuestro programa vigila la llamada y le entrega los documentos al Bibliotecario, **sin tener que cargar con el peso del sonido de la voz**.
-   - **Aislamiento por Servidor:** Cuando el Bibliotecario pide buscar un dato en los documentos, **no puede elegir de qué empresa buscar**. Es nuestro propio servidor quien mira a qué empresa pertenece esa llamada y busca únicamente en su carpeta de documentos autorizados.
+1. **El Identificador de Stand (`demoId` vinculado a `empresaId`):**
+   Cada demostración tiene su propio código (`demoId`, por ejemplo `demo_clinica_madrid`) conectado internamente a su ficha de empresa (`empresaId`, por ejemplo `emp_clinica_01`). Así mantenemos todo lo construido antes sin romper nada y evitamos que el stand de la clínica pueda leer jamás los papeles del taller mecánico.
+2. **El Control de Calidad Editorial (`borrador`, `publicada`, `desactivada`):**
+   Ningún stand abre al público si está en `borrador`, si está `desactivada` o si un humano no ha firmado antes que revisó los datos (`revisadoPorHumano: true`).
+3. **El Vigilante de Llamadas y Cronómetro por Stand (`GestorSesiones` en Fase B):**
+   - Cada sesión abierta sabe exactamente a qué `demoId` y `empresaId` pertenece, cuándo empezó, cuánto dura como máximo (180 segundos por defecto) y cuántos segundos ha consumido.
+   - **Separación entre pedir colgar y colgar de verdad:** Cuando una sesión llega a su tiempo límite o agota el presupuesto de la demo, el vigilante pide detenerla (`solicitarDetencion`, estado `detencion_solicitada`) pero **no da por libre el hueco hasta que el cable de voz confirma que realmente se cerró** (`confirmarCierre`).
 
 ---
 
 ## (c) ¿Qué hace cada carpeta y archivo importante que tenemos ahora mismo?
 
-- **`.gitignore`**: Lista de seguridad que impide que tus contraseñas (`.env`), certificados o grabaciones de voz de clientes se suban por error a internet.
-- **`.env.example`**: Plantilla de ejemplo (sin claves reales) con los nombres de las variables que usará el sistema.
-- **`package.json`**: Ficha de configuración de Node.js 26 LTS que permite ejecutar las pruebas automáticas con el comando `npm test`.
-- **`datos/empresas.json`**: Nuestro catálogo local de empresas de prueba:
-  - Incluye dos empresas activas (**Clínica Dental Sonrisa Madrid** y **Talleres Mecánicos MotorSur Sevilla**) y una empresa con el agente apagado (**Academia Norte**) para probar bloqueos de seguridad.
-  - Contiene las instrucciones oficiales de `gpt-live-1` y `gpt-6-luna`, los documentos oficiales (horarios, precios, dirección, políticas) y los valores configurados de límites (`limitesConsumoConfigurados`, que por ahora son datos declarativos y se activarán como controles en vivo en el Paso 2B).
-- **`servidor/conocimiento/buscador_conocimiento.js`**: El motor que busca respuestas en los documentos de la empresa:
-  - Verifica que el identificador de la empresa provenga del servidor (`contextoSesionServidor`) y bloquea cualquier intento del modelo de pedir datos de otra empresa.
-  - Devuelve fragmentos originales exactos sin inventar ni rellenar palabras. Si no hay información suficiente, devuelve `encontrado: false`.
-- **`tests/probar_conocimiento.test.js`**: batería de 8 pruebas automáticas que comprueba que el buscador acierta datos reales, aísla empresas, frena consultas desconocidas y rechaza datos malformados.
-- **`README.md`**, **`CAMBIOS.md`** e **`INFORME_DEL_PROYECTO.md`**: Documentación del proyecto.
+- **`.gitignore`** y **`.env.example`**: Protegen tus claves privadas para que nunca se suban a GitHub y documentan las variables de configuración.
+- **`package.json`**: Configuración de Node.js 26 LTS que ejecuta las 4 baterías de pruebas automáticas (51 pruebas en total) con `npm test`.
+- **`datos/empresas.json`**: Catálogo original de empresas por `empresaId` (mantenido por compatibilidad con el Paso 2A y Paso 2B).
+- **`datos/demostraciones.json`**: Catálogo estático de demostraciones comerciales por `demoId`, vinculadas a su `empresaId`, con estados (`borrador`, `publicada`, `desactivada`) y control de revisión humana (`origenDatos.revisadoPorHumano`).
+- **`servidor/conocimiento/buscador_conocimiento.js`**: Buscador de fragmentos oficiales con aislamiento por servidor tanto para `demoId` como para `empresaId`.
+- **`servidor/empresas/gestor_sesiones.js`** *(Adaptado y simplificado en Fase B)*:
+  - Gestiona sesiones por `demoId` (resolviendo `empresaId` desde la configuración autorizada del servidor y rechazando cruces ilegales).
+  - Controla el límite global (50 sesiones), límite simultáneo por demo, duración máxima por sesión (180s por defecto) y presupuesto de segundos IA por demo sin reservas complejas.
+  - Valida que los reportes de segundos sean números reales finitos y no negativos (bloqueando `NaN`, `Infinity` y negativos).
+  - Separa `solicitarDetencion` (marca la sesión para corte sin asumir que el canal físico ya se cerró) de `confirmarCierre` / `liberarSesion` (cierre físico idempotente).
+- **`tests/probar_conocimiento.test.js`** *(8 pruebas)*, **`tests/probar_demostraciones.test.js`** *(9 pruebas)*, **`tests/probar_sesiones.test.js`** *(20 pruebas)* y **`tests/probar_sesiones_multidemo.test.js`** *(14 pruebas nuevas de Fase B)*.
 
 ---
 
 ## (d) ¿Qué se ha hecho hasta ahora? (Diario con fechas)
 
-### 📅 Sesión del 5 de noviembre de 2026 — Fase 1 y Paso 2A Completados
+### 📅 Sesión del 5 de noviembre de 2026 — Fase 1, Paso 2A, Paso 2B, Fase A y Fase B
 
-1. **Fase 1 (Entorno, Documentación y Respaldo en GitHub — Commits `412c029` y `b061a3b`):**
-   - Actualización y verificación de **Node.js `v26.13.0` LTS** y **npm `11.20.0`**.
-   - Diseño definitivo con **`gpt-live-1` + `gpt-6-luna` (Responses Delegation)**, WebRTC para la primera demostración, SIP directo con Telnyx para telefonía española y control por *Sideband WebSocket*, con tabla oficial de concurrencia (**Build: 50, Launch: 300, Grow: 500**).
-   - Creación de `.gitignore`, `.env.example`, `README.md`, `CAMBIOS.md` e `INFORME_DEL_PROYECTO.md`, guardados y subidos a GitHub (`412c029` y `b061a3b`).
-2. **Paso 2A (Base de Conocimiento Empresarial y Aislamiento por Servidor — Completado y publicado en GitHub):**
-   - Creación de `package.json`, `datos/empresas.json`, `servidor/conocimiento/buscador_conocimiento.js` y `tests/probar_conocimiento.test.js`.
-   - Verificación con `npm test`: **8 de 8 pruebas superadas con éxito**, confirmando que una empresa jamás puede leer datos de otra, que el modelo no puede inyectar otro `empresaId` y que las preguntas sin respuesta en los documentos devuelven `encontrado: false`.
-   - Guardado en la rama `main` de Git y publicado en el repositorio remoto de GitHub (`https://github.com/kevoxky/callvoxky.git`).
+1. **Fase 1 (Entorno y GitHub — Commits `412c029` y `b061a3b`):** Actualización a Node.js `v26.13.0` LTS, configuración `.gitignore` y documentación base subida a GitHub.
+2. **Paso 2A (Buscador y Aislamiento por `empresaId` — Commit `de884d6`):** Creación del buscador de fragmentos autorizados y sus 8 pruebas automáticas, subido a GitHub.
+3. **Paso 2B (Gestor de Sesiones Base — En local):** Implementación inicial de `GestorSesiones` y sus 20 pruebas automáticas.
+4. **Fase A del MVP Multidemo (Modelo de Datos y Aislamiento por `demoId` — En local):** Creación de `datos/demostraciones.json`, adaptación del buscador y 9 pruebas multidemo (37/37 pruebas superadas).
+5. **Fase B del MVP Multidemo (Adaptación y Simplificación del Gestor de Sesiones a `demoId` — Completado en local):**
+   - Adaptación de `servidor/empresas/gestor_sesiones.js` para operar por `demoId` vinculado a `empresaId`, sin reservas complejas, con tope de 180s por defecto, validación contra `NaN`/`Infinity`/negativos y separación explícita entre `solicitarDetencion` y `confirmarCierre`.
+   - Creación de `tests/probar_sesiones_multidemo.test.js` con 14 pruebas adversariales.
+   - Verificación total con `npm test`: **51 de 51 pruebas superadas con éxito** (0 fallos).
 
 ---
 
-## (e) ¿Qué falta o está pendiente? (Limitaciones actuales y siguientes pasos)
+## (e) ¿Qué falta o está pendiente? (Hoja de ruta del MVP Multidemo)
 
-### Limitaciones pendientes actuales (al terminar el Paso 2A):
-1. **Límites de consumo declarativos:** Los valores `maxLlamadasSimultaneas`, `maxSegundosMensuales` y `maxDuracionPorLlamadaSegundos` ya están definidos en `datos/empresas.json`, pero **aún no actúan como frenos activos** porque todavía no hemos construido el gestor de sesiones en vivo (se construye en el Paso 2B).
-2. **Búsqueda por coincidencia léxica local:** El buscador actual analiza términos específicos y palabras clave sobre JSON local (suficiente y exacto para la primera demostración); la carga de archivos PDF y almacenamiento en Firestore se añadirá en fases posteriores.
-3. **Sin conexión de red todavía:** Todavía no hemos conectado el servidor con OpenAI ni creado la pantalla del probador WebRTC.
-
-### Hoja de ruta restante:
-- **Paso 2B (Siguiente paso):** Gestor de sesiones en memoria (control activo de concurrencia, límite de duración y presupuesto de segundos) + Conector WebRTC y *Sideband WebSocket* con OpenAI GPT-Live + Probador web con micrófono y altavoces.
-- **Fase 3:** Conexión telefónica real `+34` mediante SIP directo entre Telnyx y OpenAI.
-- **Fase 4:** Migración de datos y reglas de seguridad a Firebase Firestore.
-- **Fase 5:** Panel de administración en Next.js con Firebase Auth.
-- **Fase 6:** Integración con WhatsApp Business (mensajería de texto) y despliegue 24/7.
+- **Fase C (Motor de Demo Simulada e Interfaz Web Comercial — Coste 0 €):** Servidor local ligero y pantalla de demostración por `demoId` con respuestas basadas en los fragmentos autorizados y voz del navegador sin gastar créditos de IA.
+- **Fase D (Modo Real con GPT-Live y WebRTC):** Conexión de voz en tiempo real con `gpt-live-1` + `gpt-6-luna` gobernada por `GestorSesiones` (`solicitarDetencion` enviará el cierre real al canal y el evento `session.closed` ejecutará `confirmarCierre`).
+- **Fase E (Preparación Manual y Automática de Demos con Revisión Humana):** Flujo para crear borradores y aprobarlos antes de publicar.
 
 ---
 
 ## (f) ¿Cómo usarlo y probarlo ahora mismo?
 
-Abre una terminal PowerShell en la carpeta `CallVoxky` y escribe:
+Abre una terminal PowerShell en la carpeta `CallVoxky` y ejecuta:
 
 ```powershell
 npm test
 ```
 
-Verás cómo se ejecutan automáticamente las **8 pruebas de seguridad y conocimiento** y todas marcan `✔` (*pass 8, fail 0*).
+Se ejecutarán las **51 pruebas automáticas** (8 de Paso 2A + 9 de Fase A + 20 de Paso 2B + 14 de Fase B) confirmando que todas pasan (`pass 51, fail 0`).
 
 ---
 
 ## (g) Riesgos, Seguridad, Datos y Costes a tener en cuenta
 
-- **Coste acumulado hasta ahora:** **0,00 € / $0,00 USD** (todo el Paso 2A funciona localmente sin llamadas a APIs externas ni paquetes de terceros).
-- **Seguridad anti-fuga entre empresas:** El identificador `empresaId` nunca viaja como parámetro libre del modelo de IA; lo inyecta el servidor según la sesión autenticada.
-- **Git y Respaldo:** El Paso 2A se encuentra guardado en la rama `main` y sincronizado en el repositorio remoto de GitHub (`https://github.com/kevoxky/callvoxky.git`), sin incluir claves ni archivos privados.
-
----
-
-## 💡 Recomendación para continuar
-
-Con el **Paso 2A** verificado con `npm test` (8/8 pruebas superadas) y publicado en GitHub, el siguiente paso cuando lo autorices será el **Paso 2B (Gestor Activo de Sesiones, Concurrencia y Límites en Memoria)**.
+- **Coste acumulado hasta ahora:** **0,00 € / $0,00 USD** (cero llamadas externas, cero paquetes instalados).
+- **Riesgos pendientes a tener en cuenta:**
+  1. **Integración del cierre físico en Fase D:** Cuando se conecte WebRTC/Sideband, el controlador de red deberá escuchar cuando `procesarUso` o `solicitarDetencion` marquen `debeDetenerse: true` (`estado: "detencion_solicitada"`), cerrar activamente la conexión con OpenAI y solo entonces invocar `confirmarCierre(sesionId)`. Si el cierre físico tarda o falla, `purgarSesionesInactivas` actuará como red de seguridad.
+  2. **Memoria volátil monoproceso:** Los contadores por `demoId` residen en la memoria del proceso de Node.js; si el servidor se reinicia, los contadores vuelven a cero hasta que en fases futuras se conecte persistencia en disco o base de datos.
+- **Git:** Fases A y B verificadas con 51 pruebas superadas y publicadas en la rama `main` de GitHub.
