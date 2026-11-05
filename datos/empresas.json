@@ -1,0 +1,264 @@
+{
+  "_comentario": "Archivo: datos/empresas.json | Qué hace: Almacena las fichas de configuración y los bloques de conocimiento autorizados de cada empresa para las pruebas locales. | Con qué se conecta: Es leído únicamente por servidor/conocimiento/buscador_conocimiento.js aplicando aislamiento por empresa desde el servidor.",
+  "empresas": {
+    "emp_clinica_01": {
+      "empresaId": "emp_clinica_01",
+      "nombreComercial": "Clínica Dental Sonrisa Madrid",
+      "cif": "B12345678",
+      "agenteActivo": true,
+      "configuracionLive": {
+        "model": "gpt-live-1",
+        "voz": "marin",
+        "saludoInicial": "Hola, le atiende Clara, asistente virtual de Clínica Dental Sonrisa Madrid. ¿En qué puedo ayudarle?",
+        "instructions": "You are Clara, a calm, friendly voice assistant for Clínica Dental Sonrisa Madrid.\nSpeak Spanish (Spain) warmly and naturally, at an unhurried pace. Be clear and direct, not overly cheerful.\nIf the user is frustrated, acknowledge it briefly and focus on the next helpful step.\n\nBackchannel policy: Use moderate backchannels. Acknowledge naturally without competing with the main response.\n\nInterruption policy: Stop speaking when the user interrupts. Listen to what they say.\n\nDelegation policy:\nBackend tools:\n- Company knowledge lookup: check official prices, opening hours, location, dental treatments, and clinic policies.\n\nGenerate <|SpawnThinking|> when:\n- The request needs a backend capability or careful reasoning.\n- The caller asks about prices, schedules, address, treatments, insurance, or clinic rules.\n- A correction changes the work already requested.\n\nDo not generate <|SpawnThinking|> when:\n- You can answer from the conversation or a still-current result.\n- You need a brief clarification to understand the request.\n\nGenerate <|SpawnThinking|> before giving an answer that depends on backend work.\nDo not guess the result while waiting."
+      },
+      "configuracionBackendDelegado": {
+        "type": "responses",
+        "model": "gpt-6-luna",
+        "instructions": "## Contexto de conversación de voz\nEstás ayudando al asistente de voz en vivo de Clínica Dental Sonrisa Madrid. Las transcripciones pueden contener errores o correcciones posteriores.\n\n## Reglas estrictas de negocio\n1. Para cualquier pregunta sobre precios, horarios, ubicación, tratamientos o políticas de la clínica, DEBES llamar a la función `consultar_conocimiento_empresa`.\n2. Responde ÚNICAMENTE utilizando los fragmentos literales devueltos por `consultar_conocimiento_empresa`.\n3. Si la función devuelve `encontrado: false` o el dato específico no aparece en los fragmentos devueltos, indica claramente que no tienes esa información confirmada en la documentación oficial de la clínica y que un compañero humano puede informarle. NUNCA inventes ni supongas precios, horarios ni servicios.\n\n## Devolución del resultado\nDevuelve únicamente los hechos verificados de forma concisa en español para que el asistente de voz los comunique al paciente.",
+        "herramientaConocimiento": {
+          "type": "function",
+          "name": "consultar_conocimiento_empresa",
+          "description": "Busca información oficial autorizada (precios, horarios, ubicación, servicios o políticas) exclusivamente en la base de conocimiento de la empresa actual.",
+          "strict": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "consulta": {
+                "type": "string",
+                "description": "Términos concretos que pregunta el cliente, por ejemplo: 'precio limpieza dental' o 'horario viernes'."
+              },
+              "categoria": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "precios",
+                  "horarios",
+                  "ubicacion",
+                  "servicios",
+                  "politicas",
+                  null
+                ],
+                "description": "Categoría opcional para afinar la búsqueda, o null para buscar en todas las categorías."
+              }
+            },
+            "required": [
+              "consulta",
+              "categoria"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "limitesConsumoConfigurados": {
+        "_notaEstado": "Configuración declarativa lista en el esquema; el control activo en vivo se implementará en el gestor de sesiones del Paso 2B.",
+        "maxLlamadasSimultaneas": 2,
+        "maxSegundosMensuales": 30000,
+        "maxDuracionPorLlamadaSegundos": 300
+      },
+      "bloquesConocimiento": [
+        {
+          "bloqueId": "clinica_horarios_01",
+          "categoria": "horarios",
+          "titulo": "Horario de atención de la clínica",
+          "contenidoTexto": "Clínica Dental Sonrisa Madrid abre de lunes a jueves de 09:30 a 20:30 de forma ininterrumpida, y los viernes de 09:30 a 15:00. Sábados, domingos y festivos de la Comunidad de Madrid permanecemos cerrados.",
+          "palabrasClave": [
+            "horario",
+            "horarios",
+            "abierto",
+            "cerrado",
+            "lunes",
+            "jueves",
+            "viernes",
+            "sabado",
+            "domingo",
+            "hora",
+            "abrir",
+            "cerrar"
+          ]
+        },
+        {
+          "bloqueId": "clinica_precios_01",
+          "categoria": "precios",
+          "titulo": "Tarifas de revisión, limpieza e implantes",
+          "contenidoTexto": "La primera consulta y revisión general con diagnóstico digital es gratuita (0 €). La limpieza dental profesional (profilaxis con ultrasonidos) tiene un precio cerrado de 48 € IVA exento. El blanqueamiento dental clínico cuesta 220 €. El estudio implantológico inicial cuesta 35 €.",
+          "palabrasClave": [
+            "precio",
+            "precios",
+            "tarifa",
+            "tarifas",
+            "coste",
+            "cuesta",
+            "limpieza",
+            "profilaxis",
+            "revision",
+            "consulta",
+            "blanqueamiento",
+            "implante",
+            "implantes"
+          ]
+        },
+        {
+          "bloqueId": "clinica_ubicacion_01",
+          "categoria": "ubicacion",
+          "titulo": "Dirección y cómo llegar",
+          "contenidoTexto": "Estamos ubicados en la Calle Goya número 45, 1ª planta, código postal 28001, Madrid (Barrio de Salamanca). La parada de Metro más cercana es Velázquez (Línea 4) o Goya (Líneas 2 y 4).",
+          "palabrasClave": [
+            "direccion",
+            "ubicacion",
+            "donde",
+            "calle",
+            "goya",
+            "madrid",
+            "metro",
+            "llegar",
+            "salamanca"
+          ]
+        },
+        {
+          "bloqueId": "clinica_politicas_01",
+          "categoria": "politicas",
+          "titulo": "Política de cancelación de citas y urgencias",
+          "contenidoTexto": "Para cancelar o cambiar una cita sin coste pedimos avisar con al menos 24 horas de antelación. Aceptamos pago con tarjeta, efectivo y financiación hasta en 12 meses sin intereses para tratamientos superiores a 300 €.",
+          "palabrasClave": [
+            "cancelar",
+            "cancelacion",
+            "cita",
+            "cambiar",
+            "pago",
+            "tarjeta",
+            "efectivo",
+            "financiacion",
+            "política",
+            "politicas"
+          ]
+        }
+      ]
+    },
+    "emp_taller_02": {
+      "empresaId": "emp_taller_02",
+      "nombreComercial": "Talleres Mecánicos MotorSur Sevilla",
+      "cif": "B87654321",
+      "agenteActivo": true,
+      "configuracionLive": {
+        "model": "gpt-live-1",
+        "voz": "stone",
+        "saludoInicial": "Hola, habla con Marcos, asistente virtual de Talleres MotorSur Sevilla. ¿En qué le puedo ayudar?",
+        "instructions": "You are Marcos, a calm, friendly voice assistant for Talleres Mecánicos MotorSur Sevilla.\nSpeak Spanish (Spain) warmly and naturally, at an unhurried pace. Be clear and direct, not overly cheerful.\nIf the user is frustrated, acknowledge it briefly and focus on the next helpful step.\n\nBackchannel policy: Use moderate backchannels. Acknowledge naturally without competing with the main response.\n\nInterruption policy: Stop speaking when the user interrupts. Listen to what they say.\n\nDelegation policy:\nBackend tools:\n- Company knowledge lookup: check official workshop prices, ITV inspection packages, opening hours, and location.\n\nGenerate <|SpawnThinking|> when:\n- The request needs a backend capability or careful reasoning.\n- The caller asks about car maintenance prices, oil changes, schedules, or workshop address.\n- A correction changes the work already requested.\n\nDo not generate <|SpawnThinking|> when:\n- You can answer from the conversation or a still-current result.\n- You need a brief clarification to understand the request.\n\nGenerate <|SpawnThinking|> before giving an answer that depends on backend work.\nDo not guess the result while waiting."
+      },
+      "configuracionBackendDelegado": {
+        "type": "responses",
+        "model": "gpt-6-luna",
+        "instructions": "Responde consultas de clientes de Talleres MotorSur Sevilla usando exclusivamente `consultar_conocimiento_empresa`. Nunca inventes datos ni precios que no estén en el resultado.",
+        "herramientaConocimiento": {
+          "type": "function",
+          "name": "consultar_conocimiento_empresa",
+          "description": "Busca información oficial autorizada en la base de conocimiento del taller actual.",
+          "strict": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "consulta": {
+                "type": "string"
+              },
+              "categoria": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "precios",
+                  "horarios",
+                  "ubicacion",
+                  "servicios",
+                  "politicas",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "consulta",
+              "categoria"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "limitesConsumoConfigurados": {
+        "_notaEstado": "Configuración declarativa lista en el esquema; el control activo en vivo se implementará en el gestor de sesiones del Paso 2B.",
+        "maxLlamadasSimultaneas": 1,
+        "maxSegundosMensuales": 15000,
+        "maxDuracionPorLlamadaSegundos": 240
+      },
+      "bloquesConocimiento": [
+        {
+          "bloqueId": "taller_precios_01",
+          "categoria": "precios",
+          "titulo": "Precios de cambio de aceite y revisión pre-ITV",
+          "contenidoTexto": "En Talleres MotorSur Sevilla el cambio de aceite sintético 5W30 y filtro cuesta 89 € IVA incluido. La revisión completa pre-ITV cuesta 39 €.",
+          "palabrasClave": [
+            "aceite",
+            "filtro",
+            "itv",
+            "revision",
+            "coche",
+            "precio",
+            "mantenimiento"
+          ]
+        },
+        {
+          "bloqueId": "taller_ubicacion_01",
+          "categoria": "ubicacion",
+          "titulo": "Dirección del taller en Sevilla",
+          "contenidoTexto": "Talleres MotorSur está en Polígono Industrial Store, Calle Destornillador nave 12, 41008 Sevilla.",
+          "palabrasClave": [
+            "direccion",
+            "ubicacion",
+            "poligono",
+            "sevilla",
+            "nave"
+          ]
+        }
+      ]
+    },
+    "emp_inactiva_03": {
+      "empresaId": "emp_inactiva_03",
+      "nombreComercial": "Academia Norte (Agente Desactivado)",
+      "cif": "B99999999",
+      "agenteActivo": false,
+      "configuracionLive": {
+        "model": "gpt-live-1",
+        "voz": "marin",
+        "saludoInicial": "Hola",
+        "instructions": "Asistente desactivado."
+      },
+      "configuracionBackendDelegado": {
+        "type": "responses",
+        "model": "gpt-6-luna",
+        "instructions": "Asistente desactivado."
+      },
+      "limitesConsumoConfigurados": {
+        "_notaEstado": "Configuración declarativa.",
+        "maxLlamadasSimultaneas": 0,
+        "maxSegundosMensuales": 0,
+        "maxDuracionPorLlamadaSegundos": 0
+      },
+      "bloquesConocimiento": [
+        {
+          "bloqueId": "academia_secreto_01",
+          "categoria": "precios",
+          "titulo": "Matrícula academia inactiva",
+          "contenidoTexto": "La matrícula cuesta 150 €.",
+          "palabrasClave": [
+            "matricula",
+            "academia",
+            "precio"
+          ]
+        }
+      ]
+    }
+  }
+}
+

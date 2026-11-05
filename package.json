@@ -1,0 +1,15 @@
+{
+  "_comentario": "Archivo: package.json | Qué hace: Define la configuración del proyecto en Node.js 26 LTS y el comando para ejecutar las pruebas automáticas sin librerías externas. | Con qué se conecta: Ejecuta los archivos de la carpeta tests/ que verifican servidor/conocimiento/buscador_conocimiento.js.",
+  "name": "callvoxky",
+  "version": "0.1.0",
+  "description": "Plataforma multiempresa de agentes virtuales de atención al cliente por voz (GPT-Live 1 + GPT-6 Luna)",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/probar_conocimiento.test.js"
+  }
+}
+
