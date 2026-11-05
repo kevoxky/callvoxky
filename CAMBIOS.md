@@ -6,6 +6,53 @@ Con qué se conecta: Complementa a INFORME_DEL_PROYECTO.md (donde se explica cad
 
 # 📝 Registro de Cambios — CallVoxky
 
+## [2026-11-05] — Fase D, Correcciones de Auditoría D.1.1: Cierre Remoto Atómico, Tipo B Inequívoco e Idempotencia de Liberaciones
+
+- **Reconciliación Tipo B y Liberación por Inexistencia (`servidor/empresas/reconciliacion_sesiones.js`):**
+  - La evidencia documental **Tipo B** traslada estimaciones a `segundosFacturablesConfirmados` únicamente cuando identifica inequívocamente la sesión mediante `openAiSessionId` y declara sus segundos facturables. Si la evidencia es incompleta, ambigua o carece de `openAiSessionId`, se rechaza y se mantiene la estimación pendiente.
+  - Para liberar una reserva (`0s`) por inexistencia se exige que no exista `openAiSessionId` ni en la sesión ni en la evidencia, además de `coberturaCompletaPeriodo: true` y `confirmacionExplicitaInexistenciaSesion: true`.
+- **Cierre Remoto Atómico (`servidor/empresas/gestor_sesiones.js` y `servidor/empresas/estado_contable_sesiones.js`):**
+  - `confirmarCierre()` / `liberarSesion()` registra el consumo final válido y el cierre remoto en una **única entrada contable** `cierre_confirmado` sin llamar previamente a `procesarUso()`.
+- **Consistencia Exacta de Ficha Individual e Idempotencia (`servidor/empresas/reconciliacion_sesiones.js`):**
+  - Unificado `regInd.segundosFacturables = 0` y metadatos completos en sesiones `inicio_indeterminado` y `cerrada`, logrando igualdad exacta (`deepEqual`) antes y después de `restaurarDesdeDiario()`.
+  - Añadido mapa `liberacionesRegistradas` en `GestorSesiones` para garantizar idempotencia ante `liberacionId` repetidos y bloquear dobles liberaciones.
+- **Refactorización Modular (`servidor/empresas/gestor_sesiones.js` y `servidor/empresas/estado_contable_sesiones.js`):**
+  - Extraídas las funciones de estado contable, verificación de arranque, cierres atómicos y métricas a `estado_contable_sesiones.js` (349 líneas), reduciendo `gestor_sesiones.js` a **443 líneas** (< 450 líneas) sin alterar ningún contrato público.
+- **Pruebas Automáticas (`tests/probar_reconciliacion_diario.test.js`):** 8 pruebas obligatorias añadidas (22 pruebas de D.1.1 y **107 de 107 pruebas superadas en total** con `npm test`).
+
+---
+
+## [2026-11-05] — Fase D, Unidad D.1.1: Persistencia Local JSONL SHA-256 y Reconciliación Contable Auditable
+
+- **Diario Contable JSONL de Solo Adición (`servidor/empresas/diario_contable.js` y `.gitignore`):**
+  - Persistencia local mediante `node:fs` y `node:crypto` (hash SHA-256 encadenado sobre JSON canónico) sin dependencias externas.
+  - Carpeta `datos/contabilidad/` y archivos `*.jsonl` excluidos en `.gitignore`.
+  - Regla de escritura previa (*write-ahead*): cualquier cambio contable se escribe primero en disco; si falla la escritura, no se confirma en memoria, se activa `integridadContableComprometida = true` y se bloquean nuevas ejecuciones reales.
+  - Detección automática de líneas truncadas, JSON corrupto, secuencia alterada, eventos duplicados y modificación de hashes SHA-256.
+- **Separación Contable en 4 Magnitudes y Reconciliación (`servidor/empresas/reconciliacion_sesiones.js` y `servidor/empresas/gestor_sesiones.js`):**
+  - Contadores independientes por demostración: `segundosUsoObservados`, `segundosFacturablesConfirmados`, `segundosFacturablesEstimados` y `segundosPendientesReconciliacion`.
+  - Recuperación tras reinicio (`restaurarDesdeDiario`): restaura reservas y sesiones pendientes; las sesiones que estaban activas al caer Node.js se recuperan como `recuperada_pendiente_reconciliacion` (nunca como cierres confirmados) y el bloqueo `presupuestoVerificadoTrasArranque = false` se mantiene activo.
+  - Reconciliación auditable por `demoId` (`reconciliarSesion`) con evidencias **Tipo A** (`session.closed` válido), **Tipo B** (documental con validación de cobertura completa e inexistencia explícita para liberar reservas de `0s`) y **Tipo C** (`irreconciliable`, que mantiene la reserva como estimación sin convertirla en consumo confirmado).
+  - Liberación excepcional asumida por operador (`liberarReservaIrreconciliablePorOperador` y `servidor/empresas/script_reconciliacion_operador.js`) protegida por el `Symbol` privado del servidor y declaración explícita de responsabilidad, sin alterar `segundosFacturablesConfirmados`.
+- **Pruebas Automáticas (`tests/probar_reconciliacion_diario.test.js` y `package.json`):** 14 pruebas nuevas integradas en `npm test` (**99 de 99 pruebas superadas en total**).
+
+---
+
+## [2026-11-05] — Fase D, Unidad D.1: Base segura de GPT-Live (solo con simuladores, sin llamadas reales)
+
+- **Interruptor y variables (`.env.example`):** Nueva variable `CALLVOXKY_LIVE_HABILITADO=false` (apagada por defecto) y `LIMITE_MAXIMO_SEGUNDOS_LLAMADA_REAL=180`. Activarla NO basta para llamar a OpenAI (ver cerrojo de presupuesto).
+- **Cerrojo de presupuesto (`servidor/empresas/gestor_sesiones.js`):**
+  - `presupuestoVerificadoTrasArranque` nace en `false` y `persistenciaActiva` en `false`. Mientras no se verifique, toda sesión real se rechaza (`presupuesto_no_verificado_tras_arranque`); las sesiones simuladas siguen funcionando.
+  - `verificarPresupuestoParaEjecucion()` exige un `Symbol` privado del servidor (`SIMBOLO_AUTORIZACION_PRESUPUESTO_SERVIDOR`), confirmación explícita de revisión contable y un mapa explícito de saldos por demo (nunca asume cero).
+  - Tras reiniciar Node.js el cerrojo vuelve a cerrarse (no hay persistencia).
+- **Contabilidad separada:** `segundosUsoObservados` (último `usage.seconds` real) y `segundosFacturables` (mínimo de 15 s de inicialización WebRTC, acreditado contra el uso posterior, sin sumarse dos veces).
+- **Nuevos estados de sesión:** `fallo_inicio_rechazado`, `inicio_indeterminado` (conserva 15 s reservados), `cerrada_sin_confirmacion` y `cerrada`. Se distinguen `cierreRemotoConfirmado` (llegó `session.closed`) y `consumoFinalConfirmado` (llegó un `usage.seconds` válido).
+- **Nuevos archivos:** `servidor/tiempo_real/configuracion_live.js`, `adaptador_webrtc_live.js` (contrato `{ session, transport }`, clasificación conservadora de errores HTTP, redirecciones desactivadas) y `controlador_sideband_live.js` (WebSocket nativo de Node con cabecera `Authorization`, corte con `session.close`).
+- **Pruebas (`tests/probar_sideband_live.test.js`):** 11 pruebas nuevas con simuladores, sin red. `node --test`: **85 de 85 superadas**.
+- **Pendiente:** el script `npm test` de `package.json` todavía NO incluye el archivo nuevo (no estaba entre los 8 autorizados); hace falta autorización para añadirlo.
+
+---
+
 ## [2026-11-05] — Fase C.1 (MVP Multidemo): Corrección de Auditoría y Endurecimiento Técnico
 
 - **Endurecimiento del Servidor HTTP (`servidor/http/servidor_demo.js`):**

@@ -59,6 +59,38 @@ Imagina un centro de exposiciones con varios stands independientes, uno por cada
    - Corrección de todos los puntos de auditoría: respuesta HTTP 400 limpia en cargas > 8 KB, captura de `URIError`, métodos HTTP 405, aviso de información parcial en preguntas mixtas, evento `voiceschanged`, una sola lectura de disco por petición y 11 pruebas nuevas.
    - Verificación total con `npm test`: **74 de 74 pruebas superadas con éxito** (0 fallos).
 
+### 📅 Sesión del 5 de noviembre de 2026 — Fase D, Unidad D.1 (Base segura de GPT-Live)
+
+- **Qué es:** Las "tuberías" internas para, en el futuro, hablar con la voz de OpenAI (GPT-Live). **Está apagado y bloqueado por defecto: hoy no se puede hacer ninguna llamada real.**
+- **Candado de presupuesto (ejemplo cotidiano):** Es como una caja fuerte con dos llaves. La primera es el interruptor `CALLVOXKY_LIVE_HABILITADO`; la segunda es una verificación del saldo hecha desde código interno del servidor. Con una sola llave no se abre. Si el servidor se reinicia, la caja se vuelve a cerrar, porque el programa guarda sus cuentas solo en memoria y olvida lo gastado.
+- **Cuentas separadas:** Se anotan por un lado los segundos que OpenAI dice que duró la llamada y, por otro, los que se pagan (OpenAI cobra mínimo 15 segundos al arrancar una llamada). Esos 15 segundos se descuentan de los primeros segundos de charla, no se cobran dos veces. Ejemplo: avisos de 12, 15 y 20 segundos dan 20 usados y 20 pagados.
+- **Si algo falla al arrancar:** Un rechazo claramente de OpenAI (por ejemplo clave incorrecta) no cuesta nada. Si hay duda (se corta internet, error 500, tiempo agotado), el sistema asume lo peor y guarda 15 segundos de reserva hasta que alguien lo revise.
+- **No se da por cerrada una llamada sin prueba:** Solo se marca como "cerrada de verdad" cuando llega el aviso oficial `session.closed`. Si no llega, queda como "cerrada sin confirmación".
+- **Archivos tocados:** `.env.example`, `servidor/empresas/gestor_sesiones.js`, `servidor/tiempo_real/configuracion_live.js`, `servidor/tiempo_real/adaptador_webrtc_live.js`, `servidor/tiempo_real/controlador_sideband_live.js`, `tests/probar_sideband_live.test.js`, `CAMBIOS.md` y este informe.
+- **Verificación:** 85 de 85 pruebas superadas con simuladores. **Coste: 0,00 €**, sin llamadas reales a OpenAI.
+
+### 📅 Sesión del 5 de noviembre de 2026 — Fase D, Unidad D.1.1 (Diario Contable Local y Reconciliación)
+
+- **Qué se resolvió:** En la Unidad D.1 las cuentas vivían solo en la memoria temporal (RAM) y no existía una herramienta para cuadrar llamadas que quedaran con datos incompletos. Con la Unidad D.1.1 hemos añadido un **libro diario en disco** y un **sistema de reconciliación auditable**.
+- **Libro diario encadenado (`diario_contable.js`):**
+  - Cada movimiento contable se escribe primero en un archivo local (`datos/contabilidad/diario_sesiones.jsonl`, protegido en `.gitignore` para no subirse nunca a internet).
+  - Cada línea lleva un sello matemático (**hash SHA-256** — *huella digital única que cambia si alguien modifica aunque sea una coma*) conectado con la línea anterior. Si el archivo se corta a medias o alguien lo altera, el sistema lo detecta y bloquea GPT-Live.
+  - Si falla el disco al intentar apuntar un movimiento, el cambio no se aplica en memoria y el sistema se bloquea por seguridad.
+- **Cuatro contadores separados que nunca se mezclan (`gestor_sesiones.js` y `reconciliacion_sesiones.js`):**
+  1. `segundosUsoObservados`: los segundos exactos que reportó OpenAI.
+  2. `segundosFacturablesConfirmados`: segundos confirmados con prueba real.
+  3. `segundosFacturablesEstimados`: reservas y estimaciones preventivas (como los 15 segundos de una llamada que dio error de red).
+  4. `segundosPendientesReconciliacion`: segundos de sesiones que esperan revisión.
+- **Cómo funciona la reconciliación (3 tipos de pruebas):**
+  - **Tipo A:** Llega el aviso oficial `session.closed` con los segundos finales.
+  - **Tipo B:** El operador aporta los datos de la factura o panel oficial de OpenAI identificando inequívocamente la sesión (`openAiSessionId`). Si la prueba es incompleta o ambigua, la estimación sigue pendiente. Para liberar una reserva de 15 segundos diciendo que costó `0`, se exige que no exista `openAiSessionId` y confirmar explícitamente que el informe cubre todo el periodo y que la sesión no existió.
+  - **Tipo C (Irreconciliable):** Si una sesión nunca se puede comprobar, queda marcada como irreconciliable conservando su reserva por prudencia (nunca se disfraza como gasto confirmado). Solo puede liberarse mediante una orden excepcional donde el operador firma que asume el riesgo (`script_reconciliacion_operador.js`), protegida contra duplicados mediante `liberacionesRegistradas`.
+- **Correcciones de Auditoría D.1.1:**
+  - **Cierre atómico en una sola línea:** Al cerrar una llamada con `session.closed`, el consumo final y el cierre se apuntan en un único asiento `cierre_confirmado` del diario.
+  - **Fichas idénticas antes y después de reiniciar:** Las fichas individuales de cada sesión tienen exactamente los mismos campos antes y después de restaurar el diario.
+  - **Código limpio y modular:** Se dividió `gestor_sesiones.js` (ahora 443 líneas) apoyándose en `servidor/empresas/estado_contable_sesiones.js` (349 líneas) para que todos los archivos sean fáciles de mantener.
+- **Verificación:** `npm test` ejecuta ahora **107 pruebas automáticas** (85 de fases previas + 22 de D.1.1 y su auditoría) y todas pasan en verde. **Coste: 0,00 €**.
+
 ---
 
 ## (e) ¿Qué falta o está pendiente? (Limitaciones actuales y siguientes fases)

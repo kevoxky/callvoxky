@@ -10,6 +10,6 @@
   },
   "scripts": {
     "start": "node servidor/http/servidor_demo.js",
-    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js tests/probar_motor_simulado.test.js"
+    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js tests/probar_motor_simulado.test.js tests/probar_sideband_live.test.js tests/probar_reconciliacion_diario.test.js"
   }
 }

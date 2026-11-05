@@ -25,6 +25,8 @@ credenciales-*.json
 grabaciones/
 datos/historial_llamadas.json
 datos/sesiones_activas.json
+datos/contabilidad/
+*.jsonl
 
 # ====================================================================
 # 3. DEPENDENCIAS Y LIBRERÍAS DESCARGADAS (SE REGENERAN CON NPM)
