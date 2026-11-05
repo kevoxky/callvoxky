@@ -1,61 +1,25 @@
 # Archivo: .gitignore
-# Qué hace: Define qué archivos privados, grabaciones, secretos y carpetas pesadas NUNCA deben guardarse en Git ni subirse a GitHub.
-# Con qué se conecta: Protege tu archivo ".env" (mientras permite subir la plantilla ".env.example"), grabaciones de voz y librerías de Node.js.
+# Qué hace: Le dice a Git qué archivos NO debe guardar ni subir a internet.
+# Con qué se conecta: Protege al archivo .env (donde van tus claves secretas) y carpetas pesadas.
 
-# ====================================================================
-# 1. SECRETOS, CLAVES Y CERTIFICADOS (NUNCA SUBIR A INTERNET)
-# ====================================================================
+# Claves secretas y configuración privada (NUNCA subir a internet)
 .env
-.env.*
-!.env.example
-*firebase-adminsdk*.json
-*service-account*.json
-credenciales-*.json
-*.pem
-*.key
-*.crt
+.env.local
+.env.*.local
 
-# ====================================================================
-# 2. GRABACIONES DE VOZ Y DATOS PRIVADOS DE LLAMADAS EN EJECUCIÓN
-# ====================================================================
-*.wav
-*.mp3
-*.flac
-*.ogg
-grabaciones/
-datos/historial_llamadas.json
-datos/sesiones_activas.json
-datos/contabilidad/
-*.jsonl
+# Datos privados de entrenamiento local (los datos reales viven en Firebase y no deben ir a Git)
+entrenamiento/datos_negocio.json
 
-# ====================================================================
-# 3. DEPENDENCIAS Y LIBRERÍAS DESCARGADAS (SE REGENERAN CON NPM)
-# ====================================================================
+# Dependencias instaladas (carpetas pesadas que se descargan solas)
 node_modules/
-.pnp
-.pnp.js
 
-# ====================================================================
-# 4. ARCHIVOS COMPILADOS, CACHÉ Y DESPLIEGUE
-# ====================================================================
-.next/
-out/
-dist/
-build/
-coverage/
-.firebase/
-.vercel/
+# Archivos de registro de errores (logs) y archivos temporales
+logs/
+*.log
+npm-debug.log*
 tmp/
 temp/
 
-# ====================================================================
-# 5. REGISTROS DE ERRORES (LOGS) Y ARCHIVOS DEL SISTEMA OPERATIVO
-# ====================================================================
-*.log
-npm-debug.log*
-firebase-debug.log*
+# Archivos propios del sistema operativo
 .DS_Store
 Thumbs.db
-Desktop.ini
-.vscode/
-.idea/

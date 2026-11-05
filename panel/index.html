@@ -1,0 +1,128 @@
+<!--
+Archivo: panel/index.html
+Qué hace: Es la pantalla web principal donde entrenas a tu asistente estilo chatbot y haces llamadas de prueba con tu micrófono.
+Con qué se conecta: Carga el diseño desde panel/estilos.css y la lógica interactiva desde panel/cliente_panel.js.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CallVoxky — Entrenamiento y Prueba de Voz en Vivo</title>
+  <link rel="stylesheet" href="/estilos.css" />
+</head>
+<body>
+  <header class="encabezado">
+    <div class="contenedor-encabezado">
+      <div>
+        <h1>📞 CallVoxky — Asistente Telefónico con IA</h1>
+        <p class="subtitulo">Motor activo: <strong>Gemini 3.8 Live</strong> (Conversación de voz a voz en tiempo real)</p>
+      </div>
+      <div id="indicador-clave" class="insignia-estado">Verificando clave...</div>
+    </div>
+  </header>
+
+  <main class="contenedor-principal">
+    <!-- COLUMNA 1: ENTRENAMIENTO ESTILO CHATBOT -->
+    <section class="tarjeta">
+      <h2>1. Entrena a tu Asistente (Hoja de Conocimiento)</h2>
+      <p class="texto-ayuda">
+        Escribe aquí la información con la que quieres que responda cuando alguien llame.
+        Al guardar, la siguiente llamada usará estos datos al instante.
+      </p>
+
+      <form id="formulario-entrenamiento">
+        <div class="fila-doble">
+          <div class="campo">
+            <label for="nombreAsistente">Nombre del asistente</label>
+            <input type="text" id="nombreAsistente" required maxlength="80" placeholder="Escribe el nombre que tendrá tu asistente" />
+          </div>
+
+          <div class="campo">
+            <label for="vozGemini">Voz en español (Gemini 3.8 Live)</label>
+            <select id="vozGemini">
+              <option value="Aoede">Aoede (Femenina, cálida y natural)</option>
+              <option value="Kore">Kore (Femenina, clara y ejecutiva)</option>
+              <option value="Leda">Leda (Femenina, suave y cercana)</option>
+              <option value="Zephyr">Zephyr (Femenina, dinámica y joven)</option>
+              <option value="Puck">Puck (Masculina, amable y ágil)</option>
+              <option value="Charon">Charon (Masculina, serena y formal)</option>
+              <option value="Fenrir">Fenrir (Masculina, firme y directa)</option>
+              <option value="Orus">Orus (Masculina, profunda y pausada)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="nombreNegocio">Nombre de tu negocio o proyecto</label>
+          <input type="text" id="nombreNegocio" required maxlength="80" placeholder="Escribe el nombre real de tu negocio" />
+        </div>
+
+        <div class="campo">
+          <label for="saludoInicial">Saludo exacto al descolgar la llamada</label>
+          <input type="text" id="saludoInicial" required maxlength="300" placeholder="Escribe la primera frase que dirá al contestar el teléfono" />
+        </div>
+
+        <div class="campo">
+          <label for="tonoConversacion">Tono y personalidad al hablar</label>
+          <input type="text" id="tonoConversacion" maxlength="300" placeholder="Cómo quieres que suene (amable, directo, formal, etc.)" />
+        </div>
+
+        <div class="campo">
+          <label for="informacionNegocio">Tu información real (Única fuente con la que responderá — Prohibido inventar)</label>
+          <textarea id="informacionNegocio" rows="8" required placeholder="Pega o escribe aquí toda tu información real: qué haces, precios, horarios, preguntas frecuentes y respuestas exactas..."></textarea>
+        </div>
+
+        <div class="campo">
+          <label for="reglasRespuesta">Reglas adicionales para tu asistente</label>
+          <textarea id="reglasRespuesta" rows="4" placeholder="Escribe qué debe hacer cuando alguien pida algo que no esté en la información o quiera dejar sus datos."></textarea>
+        </div>
+
+        <div class="acciones-formulario">
+          <button type="submit" id="boton-guardar" class="boton boton-primario">
+            💾 Guardar Entrenamiento
+          </button>
+          <span id="mensaje-guardado" class="mensaje-estado"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- COLUMNA 2: SIMULADOR TELEFÓNICO CON MICRÓFONO EN VIVO -->
+    <section class="tarjeta tarjeta-telefono">
+      <h2>2. Llamada de Prueba en Vivo (Con tu Micrófono)</h2>
+      <p class="texto-ayuda">
+        Prueba cómo contesta tu asistente antes de conectarlo al número de teléfono real de Vonage.
+        <strong>Consejo:</strong> Usa auriculares para que el micrófono no escuche tus altavoces.
+      </p>
+
+      <div id="caja-estado-llamada" class="estado-llamada estado-inactivo">
+        <span id="punto-estado" class="punto"></span>
+        <span id="texto-estado-llamada">Teléfono colgado — Listo para llamar</span>
+      </div>
+
+      <div class="botones-telefono">
+        <button type="button" id="boton-llamar" class="boton boton-llamar">
+          📞 Llamar al Asistente
+        </button>
+        <button type="button" id="boton-colgar" class="boton boton-colgar" disabled>
+          📴 Colgar Llamada
+        </button>
+      </div>
+
+      <div class="contenedor-transcripcion">
+        <div class="cabecera-transcripcion">
+          <span>Subtítulos en vivo de la llamada</span>
+          <button type="button" id="boton-limpiar-chat" class="boton-enlace">Limpiar</button>
+        </div>
+        <div id="registro-conversacion" class="registro-conversacion">
+          <p class="mensaje-vacio">
+            Haz clic en <strong>"Llamar al Asistente"</strong>, acepta el permiso del micrófono y escucha cómo te saluda en vivo.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/cliente_panel.js"></script>
+</body>
+</html>

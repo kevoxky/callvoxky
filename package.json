@@ -1,15 +1,15 @@
 {
-  "_comentario": "Archivo: package.json | Qué hace: Define la configuración del proyecto en Node.js 26 LTS y el comando para ejecutar las pruebas automáticas sin librerías externas. | Con qué se conecta: Ejecuta los archivos de la carpeta tests/ que verifican servidor/conocimiento/buscador_conocimiento.js.",
-  "name": "callvoxky",
+  "name": "callvoxky-mvp",
   "version": "0.1.0",
-  "description": "Plataforma multiempresa de agentes virtuales de atención al cliente por voz (GPT-Live 1 + GPT-6 Luna)",
-  "private": true,
+  "description": "MVP de Asistente Telefonico de Voz con IA usando Gemini 3.8 Live",
   "type": "module",
-  "engines": {
-    "node": ">=26.0.0"
-  },
+  "main": "servidor/iniciar_servidor.js",
   "scripts": {
-    "start": "node servidor/http/servidor_demo.js",
-    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js tests/probar_motor_simulado.test.js tests/probar_sideband_live.test.js tests/probar_reconciliacion_diario.test.js"
+    "start": "node servidor/iniciar_servidor.js",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "@google/genai": "^2.30.1",
+    "ws": "^8.18.0"
   }
 }
