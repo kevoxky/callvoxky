@@ -9,6 +9,7 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js"
+    "start": "node servidor/http/servidor_demo.js",
+    "test": "node --test tests/probar_conocimiento.test.js tests/probar_sesiones.test.js tests/probar_demostraciones.test.js tests/probar_sesiones_multidemo.test.js tests/probar_motor_simulado.test.js"
   }
 }

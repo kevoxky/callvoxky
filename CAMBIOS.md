@@ -6,6 +6,39 @@ Con qué se conecta: Complementa a INFORME_DEL_PROYECTO.md (donde se explica cad
 
 # 📝 Registro de Cambios — CallVoxky
 
+## [2026-11-05] — Fase C.1 (MVP Multidemo): Corrección de Auditoría y Endurecimiento Técnico
+
+- **Endurecimiento del Servidor HTTP (`servidor/http/servidor_demo.js`):**
+  - Gestión limpia de cuerpos POST superiores a 8 KB (`cuerpo_demasiado_grande`) devolviendo HTTP `400` con JSON válido sin destruir prematuramente el socket ni acumular el exceso en memoria.
+  - Captura explícita de `URIError` mediante `decodificarSegmentoUrlSeguro` devolviendo HTTP `400` (`uri_malformada`).
+  - Rechazo de métodos HTTP incorrectos con HTTP `405` (`metodo_no_permitido`).
+  - Normalización a minúsculas de parámetros de consulta para bloquear cualquier variante de mayúsculas (`?EMPRESAID=...`, `?DemoId=...`).
+- **Correcciones del Motor y Rendimiento (`servidor/conversacion/motor_simulado.js` y `servidor/conocimiento/buscador_conocimiento.js`):**
+  - Rechazo explícito de combinaciones contradictorias de `demoId` y `empresaId` en `contextoServidor` (`incongruencia_demo_empresa`).
+  - Detección de preguntas mixtas con información parcial (`informacionParcial: true` y `terminosSinInformacion`) advirtiendo en la respuesta qué términos no constan en la documentación autorizada.
+  - Exigencia de prefijo mínimo de 5 caracteres (`LONGITUD_MINIMA_PREFIJO = 5`) para evitar falsos positivos en palabras de 3 o 4 letras, y refinamiento del detector de manipulación para no bloquear frases cotidianas legítimas.
+  - Eliminación de la segunda lectura redundante de `datos/demostraciones.json` dentro de una misma petición.
+- **Mejora de Voz en Navegador (`servidor/http/plantilla_interfaz_demo.js`):** Suscripción al evento `voiceschanged` de `window.speechSynthesis` para actualizar y seleccionar automáticamente la voz española cuando se cargue de forma asíncrona.
+- **Ampliación de Pruebas (`tests/probar_motor_simulado.test.js`):** 11 pruebas nuevas (23 pruebas de Fase C/C.1 y **74 pruebas superadas en total**).
+
+---
+
+## [2026-11-05] — Fase C (MVP Multidemo): Motor de Conversación Simulado Gratuito y Ruta `/demo/:demoId`
+
+- **Motor Determinista de Conversación Simulada (`servidor/conversacion/motor_simulado.js`):**
+  - Reutiliza `obtenerDemoDesdeContextoServidor` y `consultarConocimientoEnSesion` sin modificar fases anteriores.
+  - Genera respuestas deterministas estrictamente con los fragmentos oficiales verificados de cada `demoId` (`generadoPorIAExterna: false`, sin fingir ser GPT).
+  - Cuando no hay información suficiente, devuelve una respuesta alternativa segura ofreciendo los temas autorizados de esa empresa sin inventar datos.
+  - Genera preguntas sugeridas automáticas a partir de los bloques autorizados de cada demostración.
+  - Bloquea intentos de manipular `demoId`, `empresaId` o `tenantId` tanto en el cuerpo JSON como mediante instrucciones escritas dentro del chat, y valida longitud de mensajes (2 a 300 caracteres).
+- **Interfaz Web Adaptable con Voz del Navegador (`servidor/http/plantilla_interfaz_demo.js`) y Servidor HTTP (`servidor/http/servidor_demo.js`):**
+  - Ruta individual `GET /demo/:demoId` (y endpoints `/api/demo/:demoId/info` y `POST /api/demo/:demoId/mensaje`) usando exclusivamente `node:http` nativo sin dependencias externas.
+  - Interfaz adaptable a móvil y escritorio con nombre comercial, saludo del asistente, historial, preguntas sugeridas, indicador de procesamiento, alertas de error y lectura por voz mediante Web Speech API (`window.speechSynthesis`) con botones de activar/desactivar y detener reproducción.
+- **Pruebas Automáticas de Fase C (`tests/probar_motor_simulado.test.js` y `package.json`):** 12 pruebas nuevas que verifican acceso HTTP, rechazo de demos inexistentes o no publicadas, respuestas verificadas, respuestas alternativas, aislamiento, bloqueo de manipulaciones, validaciones de longitud, preguntas sugeridas y ausencia de llamadas externas.
+- **Verificación Completa (`npm test`):** 63 de 63 pruebas superadas con éxito (51 anteriores + 12 de Fase C).
+
+---
+
 ## [2026-11-05] — Fase B (MVP Multidemo): Adaptación y Simplificación del Gestor de Sesiones a `demoId`
 
 - **Gestor de Sesiones Multidemo (`servidor/empresas/gestor_sesiones.js`):**

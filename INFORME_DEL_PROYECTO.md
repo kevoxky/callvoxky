@@ -14,11 +14,9 @@ Con qué se conecta: Es el documento principal de lectura humana; explica qué h
 
 **CallVoxky** es un sistema comercial de agentes virtuales de atención al cliente por voz, diseñado como **MVP Multidemo** (**MVP** — *Producto Mínimo Viable: primera versión funcional lista para enseñar a clientes reales y en tu portafolio*).
 
-Su objetivo es que puedas crear y compartir **demostraciones personalizadas** para distintas empresas (una clínica dental, un taller mecánico, una inmobiliaria, un despacho) con su propio enlace e identificador (`demoId`), operando en dos modalidades:
-1. **Demo Simulada (Coste 0 €):** Usa la información oficial de la empresa y la voz integrada del navegador sin gastar saldo de inteligencia artificial.
-2. **Demo Real (Voz IA en vivo):** Conversación fluida con **GPT-Live (`gpt-live-1`)** y el razonador **GPT-6 Luna (`gpt-6-luna`)**, capaz de escuchar si el cliente le interrumpe y responder exclusivamente con datos verificados de esa empresa.
-
-Además, cada demostración puede prepararse de forma **manual** o **automática** (investigando datos públicos de la empresa), pero **siempre exige revisión humana obligatoria (`revisadoPorHumano: true`)** antes de pasar de estado `borrador` a `publicada`.
+Su objetivo es que puedas crear y compartir **demostraciones personalizadas** para distintas empresas (una clínica dental, un taller mecánico, una inmobiliaria, un despacho) con su propio enlace (`/demo/:demoId`), operando en dos modalidades:
+1. **Demo Simulada (Coste 0 € — Ya disponible en Fase C):** Permite abrir un enlace en el navegador (`/demo/demo_clinica_madrid`), hacer preguntas por escrito o con los botones sugeridos y escuchar las respuestas con la voz integrada del navegador, usando exclusivamente los datos verificados de esa empresa sin gastar saldo de IA.
+2. **Demo Real (Voz IA en vivo — Futura Fase D):** Conversación hablada fluida con **GPT-Live (`gpt-live-1`)** y **GPT-6 Luna (`gpt-6-luna`)**.
 
 ---
 
@@ -27,70 +25,71 @@ Además, cada demostración puede prepararse de forma **manual** o **automática
 Imagina un centro de exposiciones con varios stands independientes, uno por cada empresa a la que quieres mostrarle tu producto:
 
 1. **El Identificador de Stand (`demoId` vinculado a `empresaId`):**
-   Cada demostración tiene su propio código (`demoId`, por ejemplo `demo_clinica_madrid`) conectado internamente a su ficha de empresa (`empresaId`, por ejemplo `emp_clinica_01`). Así mantenemos todo lo construido antes sin romper nada y evitamos que el stand de la clínica pueda leer jamás los papeles del taller mecánico.
-2. **El Control de Calidad Editorial (`borrador`, `publicada`, `desactivada`):**
-   Ningún stand abre al público si está en `borrador`, si está `desactivada` o si un humano no ha firmado antes que revisó los datos (`revisadoPorHumano: true`).
-3. **El Vigilante de Llamadas y Cronómetro por Stand (`GestorSesiones` en Fase B):**
-   - Cada sesión abierta sabe exactamente a qué `demoId` y `empresaId` pertenece, cuándo empezó, cuánto dura como máximo (180 segundos por defecto) y cuántos segundos ha consumido.
-   - **Separación entre pedir colgar y colgar de verdad:** Cuando una sesión llega a su tiempo límite o agota el presupuesto de la demo, el vigilante pide detenerla (`solicitarDetencion`, estado `detencion_solicitada`) pero **no da por libre el hueco hasta que el cable de voz confirma que realmente se cerró** (`confirmarCierre`).
+   Cada demostración tiene su propio enlace (`/demo/demo_clinica_madrid` o `/demo/demo_taller_sevilla`) que el servidor valida antes de abrir la página. Si una demo no existe, está en `borrador`, `desactivada` o no fue revisada por un humano (`revisadoPorHumano: true`), el servidor bloquea la entrada.
+2. **El Motor de Conversación Simulado Determinista (`motor_simulado.js` en Fase C):**
+   - **Determinista** (*que siempre responde con reglas exactas a partir de los documentos verificados, sin improvisar ni usar modelos generativos externos*): Cuando el visitante pregunta algo, el servidor busca en los fragmentos autorizados de esa demostración.
+   - Si encuentra el dato oficial, lo presenta con claridad sin inventar nada y sin fingir que es GPT.
+   - Si pregunta algo que no está en los documentos, lo reconoce honestamente y sugiere los temas sobre los que sí tiene información oficial.
+3. **Lectura por Voz del Navegador (`Web Speech API` / `speechSynthesis`):**
+   - El propio navegador lee en voz alta las respuestas en español cuando el usuario activa el botón **"🔊 Lectura por voz"**, con opción de detener la voz en cualquier momento y sin coste alguno.
 
 ---
 
 ## (c) ¿Qué hace cada carpeta y archivo importante que tenemos ahora mismo?
 
-- **`.gitignore`** y **`.env.example`**: Protegen tus claves privadas para que nunca se suban a GitHub y documentan las variables de configuración.
-- **`package.json`**: Configuración de Node.js 26 LTS que ejecuta las 4 baterías de pruebas automáticas (51 pruebas en total) con `npm test`.
-- **`datos/empresas.json`**: Catálogo original de empresas por `empresaId` (mantenido por compatibilidad con el Paso 2A y Paso 2B).
-- **`datos/demostraciones.json`**: Catálogo estático de demostraciones comerciales por `demoId`, vinculadas a su `empresaId`, con estados (`borrador`, `publicada`, `desactivada`) y control de revisión humana (`origenDatos.revisadoPorHumano`).
-- **`servidor/conocimiento/buscador_conocimiento.js`**: Buscador de fragmentos oficiales con aislamiento por servidor tanto para `demoId` como para `empresaId`.
-- **`servidor/empresas/gestor_sesiones.js`** *(Adaptado y simplificado en Fase B)*:
-  - Gestiona sesiones por `demoId` (resolviendo `empresaId` desde la configuración autorizada del servidor y rechazando cruces ilegales).
-  - Controla el límite global (50 sesiones), límite simultáneo por demo, duración máxima por sesión (180s por defecto) y presupuesto de segundos IA por demo sin reservas complejas.
-  - Valida que los reportes de segundos sean números reales finitos y no negativos (bloqueando `NaN`, `Infinity` y negativos).
-  - Separa `solicitarDetencion` (marca la sesión para corte sin asumir que el canal físico ya se cerró) de `confirmarCierre` / `liberarSesion` (cierre físico idempotente).
-- **`tests/probar_conocimiento.test.js`** *(8 pruebas)*, **`tests/probar_demostraciones.test.js`** *(9 pruebas)*, **`tests/probar_sesiones.test.js`** *(20 pruebas)* y **`tests/probar_sesiones_multidemo.test.js`** *(14 pruebas nuevas de Fase B)*.
+- **`.gitignore`**, **`.env.example`** y **`package.json`**: Configuración de seguridad y comandos `npm test` (ejecuta las 74 pruebas) y `npm start` (arranca el servidor web local en el puerto `3001`).
+- **`datos/empresas.json`** y **`datos/demostraciones.json`**: Catálogos estáticos de empresas y demostraciones con estados (`borrador`, `publicada`, `desactivada`) y control de revisión humana.
+- **`servidor/conocimiento/buscador_conocimiento.js`**: Buscador de fragmentos oficiales con aislamiento en el servidor, reutilización en la misma petición sin lecturas redundantes y protección contra falsos positivos de prefijos cortos.
+- **`servidor/empresas/gestor_sesiones.js`**: Gestor de sesiones concurrentes y control de límites por `demoId` y `empresaId`.
+- **`servidor/conversacion/motor_simulado.js`** *(Endurecido en Fase C.1)*: Motor determinista de respuestas simuladas gratuitas con detección de información parcial en preguntas mixtas, generador de preguntas sugeridas y validador contra manipulación de `demoId`/`empresaId`.
+- **`servidor/http/plantilla_interfaz_demo.js`** *(Endurecido en Fase C.1)*: Interfaz web moderna y adaptable (móvil y escritorio) con escape anti-XSS y síntesis de voz del navegador (`speechSynthesis` con evento `voiceschanged`).
+- **`servidor/http/servidor_demo.js`** *(Endurecido en Fase C.1)*: Servidor HTTP nativo con las rutas `GET /demo/:demoId`, `GET /api/demo/:demoId/info` y `POST /api/demo/:demoId/mensaje`, control de cuerpos > 8 KB, captura de `URIError` (`400`) y rechazo de métodos incorrectos (`405`).
+- **`tests/`**: 5 baterías de pruebas automáticas que suman **74 pruebas** (`probar_conocimiento.test.js`, `probar_demostraciones.test.js`, `probar_sesiones.test.js`, `probar_sesiones_multidemo.test.js` y `probar_motor_simulado.test.js`).
 
 ---
 
 ## (d) ¿Qué se ha hecho hasta ahora? (Diario con fechas)
 
-### 📅 Sesión del 5 de noviembre de 2026 — Fase 1, Paso 2A, Paso 2B, Fase A y Fase B
+### 📅 Sesión del 5 de noviembre de 2026 — Fases 1, 2A, 2B, A, B, C y C.1
 
-1. **Fase 1 (Entorno y GitHub — Commits `412c029` y `b061a3b`):** Actualización a Node.js `v26.13.0` LTS, configuración `.gitignore` y documentación base subida a GitHub.
-2. **Paso 2A (Buscador y Aislamiento por `empresaId` — Commit `de884d6`):** Creación del buscador de fragmentos autorizados y sus 8 pruebas automáticas, subido a GitHub.
-3. **Paso 2B (Gestor de Sesiones Base — En local):** Implementación inicial de `GestorSesiones` y sus 20 pruebas automáticas.
-4. **Fase A del MVP Multidemo (Modelo de Datos y Aislamiento por `demoId` — En local):** Creación de `datos/demostraciones.json`, adaptación del buscador y 9 pruebas multidemo (37/37 pruebas superadas).
-5. **Fase B del MVP Multidemo (Adaptación y Simplificación del Gestor de Sesiones a `demoId` — Completado en local):**
-   - Adaptación de `servidor/empresas/gestor_sesiones.js` para operar por `demoId` vinculado a `empresaId`, sin reservas complejas, con tope de 180s por defecto, validación contra `NaN`/`Infinity`/negativos y separación explícita entre `solicitarDetencion` y `confirmarCierre`.
-   - Creación de `tests/probar_sesiones_multidemo.test.js` con 14 pruebas adversariales.
-   - Verificación total con `npm test`: **51 de 51 pruebas superadas con éxito** (0 fallos).
+1. **Fase 1 y Paso 2A (`412c029`, `b061a3b`, `de884d6`):** Entorno Node.js `v26.13.0` LTS y buscador de conocimiento aislado por servidor.
+2. **Paso 2B, Fase A y Fase B (`d9b9be3`):** Modelo de datos multidemo (`demoId`), estados editoriales, revisión humana obligatoria y gestor de sesiones simplificado (51/51 pruebas superadas y subidas a GitHub).
+3. **Fase C y Fase C.1 (Motor de Conversación Simulado Gratuito y Endurecimiento Técnico — Completado en local):**
+   - Creación y endurecimiento de `servidor/conversacion/motor_simulado.js`, `servidor/http/plantilla_interfaz_demo.js`, `servidor/http/servidor_demo.js` y `tests/probar_motor_simulado.test.js`.
+   - Corrección de todos los puntos de auditoría: respuesta HTTP 400 limpia en cargas > 8 KB, captura de `URIError`, métodos HTTP 405, aviso de información parcial en preguntas mixtas, evento `voiceschanged`, una sola lectura de disco por petición y 11 pruebas nuevas.
+   - Verificación total con `npm test`: **74 de 74 pruebas superadas con éxito** (0 fallos).
 
 ---
 
-## (e) ¿Qué falta o está pendiente? (Hoja de ruta del MVP Multidemo)
+## (e) ¿Qué falta o está pendiente? (Limitaciones actuales y siguientes fases)
 
-- **Fase C (Motor de Demo Simulada e Interfaz Web Comercial — Coste 0 €):** Servidor local ligero y pantalla de demostración por `demoId` con respuestas basadas en los fragmentos autorizados y voz del navegador sin gastar créditos de IA.
-- **Fase D (Modo Real con GPT-Live y WebRTC):** Conexión de voz en tiempo real con `gpt-live-1` + `gpt-6-luna` gobernada por `GestorSesiones` (`solicitarDetencion` enviará el cierre real al canal y el evento `session.closed` ejecutará `confirmarCierre`).
-- **Fase E (Preparación Manual y Automática de Demos con Revisión Humana):** Flujo para crear borradores y aprobarlos antes de publicar.
+1. **Búsqueda léxica determinista:** Al no usar un modelo generativo externo en el modo simulado (coste 0 €), las respuestas se construyen con los fragmentos literales que coinciden con las palabras clave de la consulta y aún no hay reconocimiento de voz por micrófono.
+2. **Siguientes fases del MVP:**
+   - **Fase D:** Modo Real opcional con GPT-Live (`gpt-live-1` + `gpt-6-luna`) y WebRTC protegido por `GestorSesiones`.
+   - **Fase E:** Flujo de preparación manual/automática de nuevas demos en estado `borrador` y aprobación humana.
 
 ---
 
-## (f) ¿Cómo usarlo y probarlo ahora mismo?
+## (f) ¿Cómo usarlo y probarlo ahora mismo paso a paso?
 
-Abre una terminal PowerShell en la carpeta `CallVoxky` y ejecuta:
-
-```powershell
-npm test
-```
-
-Se ejecutarán las **51 pruebas automáticas** (8 de Paso 2A + 9 de Fase A + 20 de Paso 2B + 14 de Fase B) confirmando que todas pasan (`pass 51, fail 0`).
+1. **Para ejecutar las 63 pruebas automáticas:**
+   ```powershell
+   npm test
+   ```
+2. **Para probar manualmente una demostración en tu navegador:**
+   - Ejecuta en la terminal:
+     ```powershell
+     npm start
+     ```
+   - Abre en tu navegador cualquiera de las dos demostraciones publicadas:
+     - Clínica Dental: `http://localhost:3001/demo/demo_clinica_madrid`
+     - Taller Mecánico: `http://localhost:3001/demo/demo_taller_sevilla`
+   - Haz clic en una **pregunta sugerida** o escribe en el cuadro de texto (por ejemplo: *"¿Cuánto cuesta la limpieza dental?"*), activa el botón **"🔈 Lectura por voz"** para escuchar al asistente y pulsa `Ctrl + C` en la terminal cuando quieras apagar el servidor local.
 
 ---
 
 ## (g) Riesgos, Seguridad, Datos y Costes a tener en cuenta
 
-- **Coste acumulado hasta ahora:** **0,00 € / $0,00 USD** (cero llamadas externas, cero paquetes instalados).
-- **Riesgos pendientes a tener en cuenta:**
-  1. **Integración del cierre físico en Fase D:** Cuando se conecte WebRTC/Sideband, el controlador de red deberá escuchar cuando `procesarUso` o `solicitarDetencion` marquen `debeDetenerse: true` (`estado: "detencion_solicitada"`), cerrar activamente la conexión con OpenAI y solo entonces invocar `confirmarCierre(sesionId)`. Si el cierre físico tarda o falla, `purgarSesionesInactivas` actuará como red de seguridad.
-  2. **Memoria volátil monoproceso:** Los contadores por `demoId` residen en la memoria del proceso de Node.js; si el servidor se reinicia, los contadores vuelven a cero hasta que en fases futuras se conecte persistencia en disco o base de datos.
-- **Git:** Fases A y B verificadas con 51 pruebas superadas y publicadas en la rama `main` de GitHub.
+- **Coste acumulado hasta ahora:** **0,00 € / $0,00 USD** (cero llamadas a APIs externas, cero paquetes instalados).
+- **Seguridad:** Todas las salidas HTML están escapadas contra XSS, el servidor nunca expone `empresaId` al navegador y bloquea cualquier intento de cambiar de empresa desde la URL, cabeceras, JSON o texto del chat.
+- **Git:** Fases C y C.1 verificadas con 74 pruebas superadas y publicadas en la rama `main` de GitHub.

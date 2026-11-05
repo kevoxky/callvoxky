@@ -255,6 +255,16 @@ export function obtenerDemoDesdeContextoServidor(contextoSesionServidor) {
  */
 function resolverContextoConocimiento(contextoSesionServidor) {
   if (contextoSesionServidor && typeof contextoSesionServidor === "object" && "demoId" in contextoSesionServidor) {
+    const prevalidada = contextoSesionServidor.demoVerificadaServidor;
+    if (
+      prevalidada &&
+      typeof prevalidada === "object" &&
+      prevalidada.demoId === contextoSesionServidor.demoId &&
+      prevalidada.estado === "publicada" &&
+      validarPublicacionDemo(prevalidada).puedePublicarse
+    ) {
+      return { valido: true, entidad: prevalidada, codigoError: null, mensaje: null };
+    }
     const resDemo = obtenerDemoDesdeContextoServidor(contextoSesionServidor);
     return { valido: resDemo.valido, entidad: resDemo.demo, codigoError: resDemo.codigoError, mensaje: resDemo.mensaje };
   }
@@ -267,7 +277,7 @@ function resolverContextoConocimiento(contextoSesionServidor) {
  * Qué recibe: texto (string) a normalizar.
  * Qué devuelve: El texto limpio en minúsculas sin acentos (string).
  */
-function normalizarTexto(texto) {
+export function normalizarTexto(texto) {
   if (typeof texto !== "string") return "";
   return texto
     .toLowerCase()
@@ -283,7 +293,7 @@ function normalizarTexto(texto) {
  * Qué recibe: consultaNormalizada (string).
  * Qué devuelve: Objeto con { todasLasPalabras, palabrasEspecificas, palabrasGenericas }.
  */
-function extraerTerminosBusqueda(consultaNormalizada) {
+export function extraerTerminosBusqueda(consultaNormalizada) {
   const palabras = consultaNormalizada
     .split(" ")
     .filter((palabra) => palabra.length >= LONGITUD_MINIMA_PALABRA && !PALABRAS_VACIAS.has(palabra));
@@ -323,15 +333,19 @@ function validarArgumentosHerramienta(argumentosModelo) {
   return { valido: true, consulta: consultaLimpia, categoria, codigoError: null, mensaje: null };
 }
 
+const LONGITUD_MINIMA_PREFIJO = 5;
+
 /**
- * Qué hace: Comprueba si una palabra buscada coincide con las palabras o claves de un bloque.
+ * Qué hace: Comprueba si una palabra buscada coincide con las palabras o claves de un bloque (evitando prefijos cortos menores a 5 letras).
  * Qué recibe: palabra (string), conjuntoPalabrasBloque (Set), listaClavesNormalizadas (array).
- * Qué devuelve: true si hay coincidencia real de palabra o raíz, false en caso contrario.
+ * Qué devuelve: true si hay coincidencia real de palabra o raíz válida, false en caso contrario.
  */
-function coincidePalabraEnBloque(palabra, conjuntoPalabrasBloque, listaClavesNormalizadas) {
+export function coincidePalabraEnBloque(palabra, conjuntoPalabrasBloque, listaClavesNormalizadas) {
   const raiz = palabra.endsWith("es") && palabra.length > 5 ? palabra.slice(0, -2) : palabra.endsWith("s") && palabra.length > 4 ? palabra.slice(0, -1) : palabra;
   if (conjuntoPalabrasBloque.has(palabra) || conjuntoPalabrasBloque.has(raiz)) return true;
-  return listaClavesNormalizadas.some((clave) => clave === palabra || clave === raiz || clave.startsWith(raiz));
+  return listaClavesNormalizadas.some(
+    (clave) => clave === palabra || clave === raiz || (raiz.length >= LONGITUD_MINIMA_PREFIJO && clave.startsWith(raiz))
+  );
 }
 
 /**
