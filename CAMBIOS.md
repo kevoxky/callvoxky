@@ -6,10 +6,10 @@ Con qué se conecta: Complementa a INFORME_DEL_PROYECTO.md (donde se explica cad
 
 # 📝 Registro de Cambios — CallVoxky
 
-## [2026-11-05] — Fase 1: Preparación del Entorno y Documentación Base
+## [2026-11-05] — Fase 1: Preparación del Entorno, Documentación Base y Subida a GitHub
 
-- **Actualización a Node.js 26 LTS:** Se actualizó el entorno del ordenador de la versión experimental `v25.2.1` a la versión estable de soporte extendido **`v26.13.0` (LTS)** junto con **`npm 11.20.0`**.
-- **Inicialización de Git y Seguridad:** Se inicializó el repositorio local (`.git`) y se configuró `.gitignore` para bloquear la subida accidental de archivos `.env`, credenciales y carpetas de librerías.
-- **Plantilla de Configuración (`.env.example`):** Se definieron las variables oficiales para **`gpt-live-1`**, **`gpt-6-luna`**, el límite de concurrencia del nivel **Build (50 sesiones)** y los topes de seguridad por llamada y por empresa.
-- **Documentación del Proyecto:** Se crearon y actualizaron `README.md`, `CAMBIOS.md` e `INFORME_DEL_PROYECTO.md` reflejando la arquitectura definitiva (**GPT-Live 1 + GPT-6 Luna con Responses Delegation, WebRTC para la primera demostración, SIP directo Telnyx $\leftrightarrow$ OpenAI y control por Sideband WebSocket en Node.js**).
-
+- **Actualización y verificación de Node.js 26 LTS:** Se sustituyó la versión experimental `v25.2.1` por la versión estable **`v26.13.0` (LTS)** en `C:\Program Files\nodejs\node.exe` junto con **`npm 11.20.0`**.
+- **Inicialización de Git y Conexión a GitHub (`412c029`):** Se inicializó la rama `main`, se guardó el commit inicial (`412c029`) y se subió al repositorio `https://github.com/kevoxky/callvoxky.git`.
+- **Refuerzo de `.gitignore`:** Se configuró la exclusión de cualquier variante `.env.*` (permitiendo únicamente `!.env.example`), certificados (`*.pem`, `*.key`), grabaciones de audio (`*.wav`, `*.mp3`, `*.flac`) y registros privados de llamadas en ejecución.
+- **Plantilla de Configuración (`.env.example`):** Variables oficiales para **`gpt-live-1`**, **`gpt-6-luna`**, nivel **Build (50 sesiones)** y topes de seguridad por llamada y por empresa.
+- **Documentación sincronizada:** Se actualizaron `README.md`, `CAMBIOS.md` e `INFORME_DEL_PROYECTO.md` sincronizados con el commit real y la arquitectura definitiva.

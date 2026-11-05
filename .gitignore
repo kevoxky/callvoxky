@@ -1,30 +1,59 @@
 # Archivo: .gitignore
-# Qué hace: Le dice a Git qué archivos NUNCA debe guardar ni subir a internet (como tus claves secretas y carpetas pesadas).
-# Con qué se conecta: Protege al archivo .env (donde estarán tus contraseñas reales) y a las carpetas node_modules y .next.
+# Qué hace: Define qué archivos privados, grabaciones, secretos y carpetas pesadas NUNCA deben guardarse en Git ni subirse a GitHub.
+# Con qué se conecta: Protege tu archivo ".env" (mientras permite subir la plantilla ".env.example"), grabaciones de voz y librerías de Node.js.
 
-# 1. Secretos y contraseñas (NUNCA subir a internet)
+# ====================================================================
+# 1. SECRETOS, CLAVES Y CERTIFICADOS (NUNCA SUBIR A INTERNET)
+# ====================================================================
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 *firebase-adminsdk*.json
+*service-account*.json
 credenciales-*.json
+*.pem
+*.key
+*.crt
 
-# 2. Carpetas de librerías descargadas (son muy pesadas y se regeneran solas)
+# ====================================================================
+# 2. GRABACIONES DE VOZ Y DATOS PRIVADOS DE LLAMADAS EN EJECUCIÓN
+# ====================================================================
+*.wav
+*.mp3
+*.flac
+*.ogg
+grabaciones/
+datos/historial_llamadas.json
+datos/sesiones_activas.json
+
+# ====================================================================
+# 3. DEPENDENCIAS Y LIBRERÍAS DESCARGADAS (SE REGENERAN CON NPM)
+# ====================================================================
 node_modules/
 .pnp
 .pnp.js
 
-# 3. Archivos temporales y compilados del panel web o servidor
+# ====================================================================
+# 4. ARCHIVOS COMPILADOS, CACHÉ Y DESPLIEGUE
+# ====================================================================
 .next/
 out/
 dist/
 build/
+coverage/
+.firebase/
+.vercel/
+tmp/
+temp/
 
-# 4. Registros de errores y archivos del sistema operativo
+# ====================================================================
+# 5. REGISTROS DE ERRORES (LOGS) Y ARCHIVOS DEL SISTEMA OPERATIVO
+# ====================================================================
 *.log
 npm-debug.log*
+firebase-debug.log*
 .DS_Store
 Thumbs.db
-
+Desktop.ini
+.vscode/
+.idea/

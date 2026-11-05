@@ -42,7 +42,7 @@ Imagina la recepción de un gran edificio de oficinas donde trabajan dos especia
 
 En la carpeta principal `CallVoxky/` tenemos los cimientos limpios del proyecto:
 
-- **`.gitignore`**: Es una "lista de prohibidos" para Git. Garantiza que tus contraseñas reales (que irán en el archivo `.env`) jamás se suban por descuido a internet.
+- **`.gitignore`**: Es una "lista de prohibidos" para Git. Garantiza que tus contraseñas reales (cualquier archivo `.env`), certificados, grabaciones de voz de clientes (`*.wav`, `*.mp3`) e historiales privados jamás se suban por descuido a internet, permitiendo subir únicamente la plantilla `.env.example`.
 - **`.env.example`**: Es una plantilla rellenable sin datos reales que muestra qué variables necesita el programa (qué modelos de IA usa, cuántos minutos máximos dura una llamada y cuántas sesiones simultáneas permitimos).
 - **`README.md`**: La ficha técnica resumida del proyecto.
 - **`CAMBIOS.md`**: Una lista corta con fecha de los cambios realizados en cada etapa.
@@ -52,18 +52,19 @@ En la carpeta principal `CallVoxky/` tenemos los cimientos limpios del proyecto:
 
 ## (d) ¿Qué se ha hecho hasta ahora? (Diario con fechas)
 
-### 📅 Sesión del 5 de noviembre de 2026 — Diseño Arquitectónico y Fase 1 Completada
+### 📅 Sesión del 5 de noviembre de 2026 — Diseño Arquitectónico y Fase 1 Completada y Subida a GitHub
 1. **Auditoría del ordenador y actualización a Node.js 26 LTS:**
    - Detectamos que el ordenador tenía instalada una versión impar experimental de Node.js (`v25.2.1`) cuyo soporte terminó en junio de 2026.
-   - Se actualizó correctamente a **Node.js `v26.13.0` LTS** (*LTS: versión estable con soporte y seguridad durante años*) y **npm `11.20.0`**.
+   - Se actualizó y verificó en `C:\Program Files\nodejs\node.exe` la versión oficial estable **Node.js `v26.13.0` LTS** (*LTS: versión estable con soporte y seguridad durante años*) junto con **npm `11.20.0`**, sustituyendo por completo a la versión 25.
 2. **Definición de la Arquitectura Oficial con OpenAI GPT-Live:**
    - Se eligió el motor de voz **`gpt-live-1`** combinado con el cerebro de razonamiento **`gpt-6-luna`** mediante **Responses Delegation**.
    - Se decidió no pasar el audio por nuestro servidor: usaremos **WebRTC** desde el navegador para la primera demostración con micrófono y altavoces, y **SIP directo entre Telnyx y OpenAI** para las llamadas telefónicas reales, controlando todo desde Node.js mediante **Sideband WebSocket**.
 3. **Verificación de Costes y Límites Oficiales:**
    - `gpt-live-1` se factura por segundo exacto a **$0,05 USD por minuto** (~$0,00083/segundo), más una fracción mínima de texto en `gpt-6-luna` (~$0,00065/min).
    - Se documentaron los niveles oficiales actuales de sesiones simultáneas de GPT-Live en OpenAI: **Build (50 sesiones)**, **Launch (300 sesiones)** y **Grow (500 sesiones)**.
-4. **Creación de los archivos base de la Fase 1:**
-   - Inicialización de Git (`.git`) y creación de `.gitignore`, `.env.example`, `README.md`, `CAMBIOS.md` e `INFORME_DEL_PROYECTO.md`.
+4. **Creación de los archivos base y Respaldo en GitHub (Commit `412c029`):**
+   - Se inicializó Git en la rama principal `main`, se crearon los 5 archivos fundacionales (`.gitignore`, `.env.example`, `README.md`, `CAMBIOS.md`, `INFORME_DEL_PROYECTO.md`), se guardó el primer commit real (`412c029` — *"Fase 1: Preparar entorno, plantilla .env.example y documentacion inicial de CallVoxky"*) y se subió al repositorio remoto en GitHub (`https://github.com/kevoxky/callvoxky.git`).
+   - Se reforzó `.gitignore` para proteger cualquier variante `.env.*` (excepto `.env.example`), grabaciones de audio (`*.wav`, `*.mp3`) y registros locales de llamadas.
 
 ---
 
@@ -85,19 +86,18 @@ En la carpeta principal `CallVoxky/` tenemos los cimientos limpios del proyecto:
 
 ## (f) ¿Cómo usarlo y probarlo ahora mismo?
 
-En esta **Fase 1** aún no hemos creado el servidor de voz, pero puedes comprobar que las herramientas base de tu ordenador están listas abriendo tu terminal PowerShell en la carpeta `CallVoxky` y escribiendo:
+En esta **Fase 1** puedes comprobar el estado de tu ordenador y del repositorio conectado a GitHub abriendo PowerShell en la carpeta `CallVoxky` y ejecutando:
 
-1. `node -v` $\rightarrow$ Debe responder **`v26.13.0`**.
-2. `npm -v` $\rightarrow$ Debe responder **`11.20.0`**.
-3. `git status` $\rightarrow$ Debe mostrar los 5 archivos base creados (`.gitignore`, `.env.example`, `README.md`, `CAMBIOS.md`, `INFORME_DEL_PROYECTO.md`).
-
-*(Recuerda: según tus reglas, no he guardado ningún "commit" en Git todavía; solo lo haré cuando tú me digas la palabra "guarda" o "funciona").*
+1. `node -v` $\rightarrow$ Responde **`v26.13.0`** (instalado en `C:\Program Files\nodejs\node.exe`).
+2. `npm -v` $\rightarrow$ Responde **`11.20.0`**.
+3. `git log -n 1 --oneline` $\rightarrow$ Muestra el commit guardado (`412c029 Fase 1: Preparar entorno, plantilla .env.example y documentacion inicial de CallVoxky`).
+4. `git remote -v` $\rightarrow$ Muestra la conexión activa con `https://github.com/kevoxky/callvoxky.git`.
 
 ---
 
 ## (g) Riesgos, Seguridad, Datos y Costes a tener en cuenta
 
-- **Protección de claves secretas:** Nunca escribas tu clave de OpenAI en ningún archivo que no sea `.env`. El archivo `.env` está bloqueado en `.gitignore` para que jamás salga de tu ordenador.
+- **Protección de claves secretas y audios:** Nunca escribas tu clave de OpenAI en ningún archivo que no sea `.env`. Tanto `.env` como las grabaciones de audio están bloqueados en `.gitignore` para que jamás salgan de tu ordenador.
 - **Control de gasto en llamadas:** Como `gpt-live-1` cobra por segundo mientras la sesión esté abierta ($0,05/min), en la Fase 2 programaremos un cierre automático por duración máxima (5 minutos) y por silencio/inactividad (25 segundos), además de usar el cierre confirmado (`session.close` $\rightarrow$ `session.closed`).
 - **Normativa en España:** Para números españoles `+34` en la Fase 3, Telnyx exigirá DNI/CIF y un recibo de domicilio en la provincia del prefijo telefónico (normativa CNMC), y el agente informará al inicio de la llamada que es un asistente virtual.
 
@@ -105,5 +105,4 @@ En esta **Fase 1** aún no hemos creado el servidor de voz, pero puedes comproba
 
 ## 💡 Recomendación para continuar en el siguiente paso (Fase 2)
 
-El siguiente paso natural es construir el **Prototipo Funcional de Voz por WebRTC en tu ordenador (Fase 2)**. Antes de escribir ni una línea de código de esa Fase 2, te explicaré qué archivos pequeños vamos a crear, qué librería oficial necesitamos instalar y esperaré tu autorización.
-
+El siguiente paso natural es construir el **Prototipo Funcional de Voz por WebRTC en tu ordenador (Fase 2)**, empezando por los datos de la empresa de demostración y su buscador de conocimiento local.
