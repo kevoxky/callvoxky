@@ -1,0 +1,30 @@
+# Archivo: .gitignore
+# Qué hace: Le dice a Git qué archivos NUNCA debe guardar ni subir a internet (como tus claves secretas y carpetas pesadas).
+# Con qué se conecta: Protege al archivo .env (donde estarán tus contraseñas reales) y a las carpetas node_modules y .next.
+
+# 1. Secretos y contraseñas (NUNCA subir a internet)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*firebase-adminsdk*.json
+credenciales-*.json
+
+# 2. Carpetas de librerías descargadas (son muy pesadas y se regeneran solas)
+node_modules/
+.pnp
+.pnp.js
+
+# 3. Archivos temporales y compilados del panel web o servidor
+.next/
+out/
+dist/
+build/
+
+# 4. Registros de errores y archivos del sistema operativo
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
