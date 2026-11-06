@@ -58,12 +58,12 @@ Buscamos en la documentación oficial actualizada de Google (finales de 2026) lo
 - **`README.md`**: Resumen técnico corto para saber cómo encender el programa.
 - **`CAMBIOS.md`**: Lista corta con fecha de cada avance.
 - **`INFORME_DEL_PROYECTO.md`**: Este documento que estás leyendo.
-
-### Carpetas que crearemos paso a paso en las siguientes tareas:
-- **`panel/`**: La página web que abrirás en tu navegador para editar la información del asistente como un chatbot y probar hablarle con tu micrófono.
-- **`voz_gemini/`**: El archivo que se conecta con **`gemini-3.8-live`** para enviar y recibir la voz en vivo.
-- **`telefonia/`**: El archivo que recibe la llamada telefónica en España (`+34`) usando alternativas mejores que Twilio para Europa (como **Vonage**, **Telnyx** o **Voximplant**).
-- **`servidor/`**: El motor que enciende todo el sistema en tu computadora.
+- **`PORTAFOLIO_CASO_DE_ESTUDIO.md`**: Caso de estudio profesional listo para incluir en tu portafolio, Notion o LinkedIn, explicando qué resolviste, cómo lo hiciste y las tecnologías empleadas.
+- **`panel/widget.html`**: Widget minimalista e interactivo para incrustar en un iframe dentro de tu web de portafolio y permitir llamadas de voz en vivo con el micrófono.
+- **`panel/`**: Contiene la pantalla web del panel de administración (`index.html`), el widget (`widget.html`) y sus estilos y scripts.
+- **`voz_gemini/`**: El conector en tiempo real con **`gemini-3.8-live-extended-thinking`** mediante WebSockets bidireccionales.
+- **`telefonia/`**: Conectores oficiales para **Vonage Voice API** con remuestreo de audio telefónico (24 kHz a 16 kHz).
+- **`servidor/`**: Servidor Node.js que orquesta las APIs, Firebase y las conexiones en vivo.
 
 ---
 
@@ -77,8 +77,17 @@ Buscamos en la documentación oficial actualizada de Google (finales de 2026) lo
   4. Creamos los 5 archivos base de documentación y seguridad (`.gitignore`, `.env.example`, `README.md`, `CAMBIOS.md`, `INFORME_DEL_PROYECTO.md`).
   5. Instalamos con tu permiso `@google/genai` y `ws` (verificando 0 vulnerabilidades con `npm audit`) y creamos el **Módulo 1 (`entrenamiento/`)** junto con sus 3 pruebas automáticas (`npm test` pasó al 100%).
   6. Analizamos las mejores **alternativas a Twilio para España (`+34`)**: **Vonage**, **Telnyx** y **Voximplant** (o conectar un operador español como **Zadarma / Netelip**).
+### Sesión 2 — 6 de noviembre de 2026
+- **Lo que hicimos:**
+  1. Conectamos **Firebase Firestore** en Europa (`callvoxky`) con persistencia en tiempo real.
+  2. Implementamos soporte **Multi-Empresa / Multi-Bot** y blindaje de número exclusivo (`numeroTelefono` único por bot, asignando `+34936944069` a `Voxky — Daniel`).
+  3. Integramos **Vonage Voice API** y remuestreo de audio en tiempo real (24 kHz a 16 kHz) en paquetes de 640 bytes.
+  4. Desplegamos el servidor en **Railway** (`https://callvoxky-servidor-production.up.railway.app`).
+  5. Redactamos el documento de caso de estudio para tu portafolio (`PORTAFOLIO_CASO_DE_ESTUDIO.md`), destacando el impacto de negocio, arquitectura, retos técnicos y competencias clave.
+  6. Creamos el **Widget interactivo público para tu portafolio** (`panel/widget.html`, `panel/estilos_widget.css`, `panel/cliente_widget.js`): permite a cualquiera que visite tu web probar al asistente hablando por micrófono con una sola línea de código (`<iframe ...>`), manteniendo en privado tu panel de entrenamiento y claves.
+  7. Migramos todo el servidor desde Railway hacia **Firebase / Google Cloud Run** dentro de tu propio proyecto **`callvoxky`** (`europe-west1`) con **escalado a cero (`minInstances: 0`)** en **`https://callvoxky-servidor-dzbrdtyv6a-ew.a.run.app`**, actualizamos Vonage con la nueva URL y apagamos el servicio en Railway para que no te genere facturas aparte.
 - **Recomendación para continuar en el siguiente paso:**
-  Ya está guardado, blindado por número exclusivo (`+34936944069` asignado únicamente a `Voxky — Daniel`), conectado a **Firebase (`callvoxky`)**, a **Vonage API** y desplegado en **Railway** (`https://callvoxky-servidor-production.up.railway.app`). En cuanto **Zadarma** termine de verificar tus documentos y active tu número de Barcelona `+34936944069`, solo tendrás que activar el desvío SIP en Zadarma hacia Vonage para llamar desde cualquier móvil.
+  En cuanto **Zadarma** termine de validar tus documentos y active tu número `+34936944069`, solo activas el desvío SIP hacia Vonage para recibir llamadas telefónicas en vivo. Para tu portafolio, puedes copiar directamente el contenido de `PORTAFOLIO_CASO_DE_ESTUDIO.md` a tu web, PDF o perfil.
 
 ---
 

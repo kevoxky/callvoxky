@@ -180,7 +180,8 @@ function servirArchivoDelPanel(urlSolicitada, respuestaHttp) {
 
   respuestaHttp.writeHead(200, {
     'Content-Type': tipoContenido,
-    'X-Content-Type-Options': 'nosniff'
+    'X-Content-Type-Options': 'nosniff',
+    'Permissions-Policy': 'microphone=*'
   });
   respuestaHttp.end(contenido);
 }
@@ -198,14 +199,17 @@ function enviarPorWebSocket(clienteWs, objetoDatos) {
 
 /**
  * Conecta una llamada de prueba desde el micrófono del navegador con una sesión en vivo de gemini-3.8-live.
- * Qué recibe: clienteWs (el canal de comunicación con la pantalla del usuario).
+ * Qué recibe: clienteWs (el canal de comunicación con la pantalla del usuario) y urlPeticionWs (opcional, para leer botId).
  * Qué devuelve: nada.
  */
-async function manejarLlamadaPruebaWebSocket(clienteWs) {
+async function manejarLlamadaPruebaWebSocket(clienteWs, urlPeticionWs = '') {
   let sesionGemini = null;
+  const urlParseada = new URL(urlPeticionWs || '/ws/llamada-prueba', 'http://localhost');
+  const botIdSolicitado = urlParseada.searchParams.get('botId') || '';
 
   try {
     sesionGemini = await crearSesionVozGemini({
+      botId: botIdSolicitado,
       alConectar: (datos) => {
         enviarPorWebSocket(clienteWs, {
           tipo: 'estado',
@@ -337,9 +341,9 @@ export function crearServidorAplicacion() {
   const servidorWs = new WebSocketServer({ noServer: true });
 
   servidorHttp.on('upgrade', (peticion, socket, cabecera) => {
-    if (peticion.url === '/ws/llamada-prueba') {
+    if (peticion.url === '/ws/llamada-prueba' || peticion.url?.startsWith('/ws/llamada-prueba?')) {
       servidorWs.handleUpgrade(peticion, socket, cabecera, (clienteWs) => {
-        manejarLlamadaPruebaWebSocket(clienteWs);
+        manejarLlamadaPruebaWebSocket(clienteWs, peticion.url);
       });
     } else if (peticion.url?.startsWith('/ws/vonage')) {
       servidorWs.handleUpgrade(peticion, socket, cabecera, (clienteWs) => {

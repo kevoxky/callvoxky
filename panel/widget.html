@@ -1,0 +1,64 @@
+<!--
+Archivo: panel/widget.html
+Qué hace: Pantalla minimalista del simulador telefónico pensada para incrustarse en cualquier portafolio web mediante un iframe de una sola línea.
+Con qué se conecta: Carga panel/estilos_widget.css y panel/cliente_widget.js; se conecta por WebSocket con /ws/llamada-prueba.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CallVoxky — Prueba en Vivo</title>
+  <link rel="stylesheet" href="/estilos_widget.css" />
+</head>
+<body>
+  <div class="tarjeta-widget">
+    <header class="cabecera-widget">
+      <div class="icono-asistente">🎙️</div>
+      <div class="info-asistente">
+        <h2 id="titulo-asistente" class="titulo">Asistente Telefónico IA</h2>
+        <p id="subtitulo-asistente" class="subtitulo">Voz bidireccional en tiempo real</p>
+      </div>
+      <span class="insignia-vivo">EN VIVO</span>
+    </header>
+
+    <div class="cuerpo-widget">
+      <div id="caja-estado-llamada" class="estado-llamada estado-inactivo">
+        <span id="punto-estado" class="punto"></span>
+        <span id="texto-estado-llamada">Teléfono colgado — Listo para llamar</span>
+      </div>
+
+      <div class="aviso-auriculares">
+        💡 <strong>Consejo:</strong> Usa auriculares para que el micrófono no capte tus altavoces.
+      </div>
+
+      <div class="botones-llamada">
+        <button type="button" id="boton-llamar" class="boton boton-llamar">
+          📞 Llamar al Asistente
+        </button>
+        <button type="button" id="boton-colgar" class="boton boton-colgar" disabled>
+          📴 Colgar Llamada
+        </button>
+      </div>
+
+      <div class="contenedor-transcripcion">
+        <div class="barra-transcripcion">
+          <span>Subtítulos en vivo</span>
+          <button type="button" id="boton-limpiar-chat" class="boton-limpiar">Limpiar</button>
+        </div>
+        <div id="registro-conversacion" class="registro-conversacion">
+          <p class="mensaje-vacio">
+            Haz clic en <strong>"Llamar al Asistente"</strong>, permite el micrófono y habla naturalmente. Puedes interrumpirlo en cualquier momento.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="pie-widget">
+      <span>⚡ Motor: <strong>Gemini 3.8 Live</strong> | Creado con CallVoxky</span>
+    </footer>
+  </div>
+
+  <script type="module" src="/cliente_widget.js"></script>
+</body>
+</html>
