@@ -42,15 +42,18 @@ export function convertirAudioGemini24kAVonage16k(audioBase64Gemini) {
  */
 export function generarInstruccionVonageNcco(peticionHttp) {
   const urlConfigurada = (process.env.URL_PUBLICA_SERVIDOR || '').trim().replace(/\/$/, '');
+  const urlParseada = new URL(peticionHttp.url || '/', 'http://localhost');
+  const numeroMarcado = urlParseada.searchParams.get('to') || urlParseada.searchParams.get('numero') || '';
+  const sufijoQuery = numeroMarcado ? `?numero=${encodeURIComponent(numeroMarcado)}` : '';
   let uriWebSocket = '';
 
   if (urlConfigurada) {
     const baseWs = urlConfigurada.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
-    uriWebSocket = `${baseWs}/ws/vonage`;
+    uriWebSocket = `${baseWs}/ws/vonage${sufijoQuery}`;
   } else {
     const host = peticionHttp.headers['x-forwarded-host'] || peticionHttp.headers.host || 'localhost:3456';
     const protocolo = peticionHttp.headers['x-forwarded-proto'] === 'http' ? 'ws' : 'wss';
-    uriWebSocket = `${protocolo}://${host}/ws/vonage`;
+    uriWebSocket = `${protocolo}://${host}/ws/vonage${sufijoQuery}`;
   }
 
   return [
@@ -91,14 +94,19 @@ function enviarCuadrosDeAudioAVonage(clienteWs, nuevoTrozo16k, estadoCola) {
  * Qué recibe: clienteWs (el canal WebSocket abierto por la central telefónica de Vonage al entrar la llamada).
  * Qué devuelve: nada.
  */
-export async function manejarLlamadaTelefonicaVonage(clienteWs) {
+export async function manejarLlamadaTelefonicaVonage(clienteWs, urlPeticionWs = '') {
   let sesionGemini = null;
   const estadoColaAudio = { pendiente: Buffer.alloc(0) };
+  const urlParseada = new URL(urlPeticionWs || '/ws/vonage', 'http://localhost');
+  const numeroTelefonoLlamado = urlParseada.searchParams.get('numero') || '';
 
   try {
     sesionGemini = await crearSesionVozGemini({
+      numeroTelefono: numeroTelefonoLlamado,
       alConectar: (datos) => {
-        console.log(`📞 [Vonage] Llamada telefónica conectada con ${datos.nombreAsistente} (${datos.nombreNegocio})`);
+        console.log(
+          `📞 [Vonage] Llamada al número ${datos.numeroTelefono || numeroTelefonoLlamado || 'general'} conectada exclusivamente con ${datos.nombreAsistente} (${datos.nombreNegocio})`
+        );
       },
       alRecibirAudioBase64: (audioBase64Gemini) => {
         const audio16k = convertirAudioGemini24kAVonage16k(audioBase64Gemini);

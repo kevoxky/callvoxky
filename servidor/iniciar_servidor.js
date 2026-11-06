@@ -25,6 +25,11 @@ import {
   generarInstruccionVonageNcco,
   manejarLlamadaTelefonicaVonage
 } from '../telefonia/rutas_vonage.js';
+import {
+  leerCredencialesAppVonage,
+  configurarAplicacionVonageViaApi,
+  llamarAMovilConVonageApi
+} from '../telefonia/api_vonage.js';
 
 const RUTA_ARCHIVO_ACTUAL = fileURLToPath(import.meta.url);
 const CARPETA_SERVIDOR = path.dirname(RUTA_ARCHIVO_ACTUAL);
@@ -253,6 +258,54 @@ async function manejarLlamadaPruebaWebSocket(clienteWs) {
 }
 
 /**
+ * Atiende las peticiones para consultar el estado de Vonage o iniciar una llamada real al móvil (/api/vonage).
+ * Qué recibe: peticionHttp y respuestaHttp.
+ * Qué devuelve: nada (responde en JSON al navegador).
+ */
+async function manejarApiVonage(peticionHttp, respuestaHttp) {
+  sincronizarArchivoEnvEnMemoria();
+
+  if (peticionHttp.method === 'GET') {
+    const app = leerCredencialesAppVonage();
+    responderJson(respuestaHttp, 200, {
+      ok: true,
+      conectado: Boolean(app?.applicationId),
+      applicationId: app?.applicationId || '',
+      nombreApp: app?.nombre || '',
+      urlPublicaConfigurada: Boolean((process.env.URL_PUBLICA_SERVIDOR || '').trim())
+    });
+    return;
+  }
+
+  if (peticionHttp.method === 'POST') {
+    try {
+      const cuerpo = await leerCuerpoJsonSeguro(peticionHttp);
+      if (cuerpo.accion === 'sincronizar') {
+        const app = await configurarAplicacionVonageViaApi(cuerpo.urlPublica || '');
+        responderJson(respuestaHttp, 200, {
+          ok: true,
+          mensaje: `✅ Aplicación "${app.nombre}" sincronizada en Vonage (${app.applicationId})`,
+          applicationId: app.applicationId
+        });
+        return;
+      }
+
+      const llamada = await llamarAMovilConVonageApi(cuerpo.numeroMovil, cuerpo.urlPublica || '');
+      responderJson(respuestaHttp, 200, {
+        ok: true,
+        mensaje: '📞 ¡Llamando a tu teléfono móvil ahora mismo! Contesta cuando suene.',
+        uuid: llamada.uuid
+      });
+    } catch (error) {
+      responderJson(respuestaHttp, 400, { ok: false, error: error.message });
+    }
+    return;
+  }
+
+  responderJson(respuestaHttp, 405, { ok: false, error: 'Método no permitido.' });
+}
+
+/**
  * Crea y configura el servidor HTTP y el servidor WebSocket listos para encenderse.
  * Qué recibe: nada.
  * Qué devuelve: el objeto servidorHttp de Node.js.
@@ -263,6 +316,10 @@ export function crearServidorAplicacion() {
   const servidorHttp = http.createServer((peticion, respuesta) => {
     if (peticion.url?.startsWith('/api/entrenamiento')) {
       manejarApiEntrenamiento(peticion, respuesta);
+      return;
+    }
+    if (peticion.url?.startsWith('/api/vonage')) {
+      manejarApiVonage(peticion, respuesta);
       return;
     }
     if (peticion.url?.startsWith('/telefonia/vonage/respuesta')) {
@@ -284,9 +341,9 @@ export function crearServidorAplicacion() {
       servidorWs.handleUpgrade(peticion, socket, cabecera, (clienteWs) => {
         manejarLlamadaPruebaWebSocket(clienteWs);
       });
-    } else if (peticion.url === '/ws/vonage') {
+    } else if (peticion.url?.startsWith('/ws/vonage')) {
       servidorWs.handleUpgrade(peticion, socket, cabecera, (clienteWs) => {
-        manejarLlamadaTelefonicaVonage(clienteWs);
+        manejarLlamadaTelefonicaVonage(clienteWs, peticion.url);
       });
     } else {
       socket.destroy();
@@ -298,9 +355,9 @@ export function crearServidorAplicacion() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === RUTA_ARCHIVO_ACTUAL) {
   const servidor = crearServidorAplicacion();
-  const puerto = Number(process.env.PUERTO) || PUERTO_POR_DEFECTO;
+  const puerto = Number(process.env.PORT) || Number(process.env.PUERTO) || PUERTO_POR_DEFECTO;
 
-  servidor.listen(puerto, () => {
+  servidor.listen(puerto, '0.0.0.0', () => {
     console.log('============================================================');
     console.log(`✅ CallVoxky está encendido en: http://localhost:${puerto}`);
     console.log('Abre ese enlace en tu navegador para entrenar y probar la voz.');

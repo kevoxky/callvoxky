@@ -25,3 +25,5 @@ Con qué se conecta: Sirve de historial rápido junto con INFORME_DEL_PROYECTO.m
 - Se creó el conector telefónico para España con **Vonage** (`telefonia/rutas_vonage.js`).
 - Se añadió soporte **Multi-Empresa / Multi-Bot** con selector en pantalla para entrenar varios asistentes y elegir cuál contesta las llamadas.
 - Se actualizó el modelo de voz a **`gemini-3.8-live-extended-thinking`** (`MEDIUM`) y se mejoraron las instrucciones semánticas para que razone sinónimos y contexto sin inventar datos falsos.
+- Se integró la API oficial de **Vonage** (`telefonia/api_vonage.js`) creando automáticamente la aplicación de voz y enlazándola con el dominio público de **Railway** (`https://callvoxky-servidor-production.up.railway.app`).
+- Se implementó el **Blindaje de Número Exclusivo por Empresa** (`numeroTelefono` único por bot en Firebase) vinculando `+34936944069` exclusivamente a `Voxky — Daniel`.

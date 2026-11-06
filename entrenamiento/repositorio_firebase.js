@@ -1,7 +1,7 @@
 /**
  * Archivo: entrenamiento/repositorio_firebase.js
- * Qué hace: Guarda y lee múltiples bots/empresas y el bot activo en la base de datos en la nube
- *           Firebase Firestore (proyecto "callvoxky" en Europa), manteniendo copia local de respaldo.
+ * Qué hace: Guarda y lee múltiples bots/empresas en Firebase Firestore (proyecto "callvoxky" en Europa)
+ *           y busca qué bot exclusivo corresponde a cada número de teléfono entrante.
  * Con qué se conecta: Usa entrenamiento/gestor_entrenamiento.js y es llamado por servidor/iniciar_servidor.js
  *                     y voz_gemini/sesion_gemini_live.js.
  */
@@ -11,7 +11,8 @@ import {
   escribirCatalogoEnDisco,
   guardarEntrenamiento,
   normalizarCatalogoBots,
-  normalizarCamposBot
+  normalizarCamposBot,
+  normalizarNumeroTelefono
 } from './gestor_entrenamiento.js';
 
 const COLECCION_FIRESTORE = 'callvoxky_entrenamiento';
@@ -103,7 +104,7 @@ async function subirCatalogoAFirestore(catalogo) {
 }
 
 /**
- * Lee todos los bots/empresas y el bot activo desde Firebase Firestore (y sube el local si la nube aún estaba vacía).
+ * Lee todos los bots/empresas y el bot activo desde Firebase Firestore.
  * Qué recibe: nada.
  * Qué devuelve: una Promesa con { botActivoId, bots, datos, origen }.
  */
@@ -115,7 +116,6 @@ export async function leerCatalogoNube() {
     const respuesta = await fetch(url, { method: 'GET' });
 
     if (respuesta.status === 404) {
-      // Si la nube aún estaba vacía pero ya tenías entrenado tu bot en local, lo subimos automáticamente
       if (catalogoLocal.bots.length > 0) {
         await subirCatalogoAFirestore(catalogoLocal);
       }
@@ -162,17 +162,36 @@ export async function leerCatalogoNube() {
 }
 
 /**
- * Devuelve únicamente el bot/empresa que está seleccionado como activo para atender llamadas.
- * Qué recibe: nada.
- * Qué devuelve: una Promesa con { datos, origen }.
+ * Busca el bot exacto que debe contestar la llamada según el número marcado (o el botId indicado).
+ * Qué recibe: filtro ({ numeroTelefono, botId }).
+ * Qué devuelve: una Promesa con { datos, origen } del bot dueño de ese número.
  */
-export async function leerEntrenamientoNube() {
+export async function leerEntrenamientoNube(filtro = {}) {
   const resultado = await leerCatalogoNube();
+  const numeroBuscado = normalizarNumeroTelefono(filtro.numeroTelefono || '');
+
+  // 1. Si la llamada entra a un número telefónico específico (ej. +34936944069), buscamos el bot dueño exclusivo de ese número
+  if (numeroBuscado) {
+    const botPorNumero = resultado.bots.find((b) => b.numeroTelefono === numeroBuscado);
+    if (botPorNumero) {
+      return { datos: botPorNumero, origen: resultado.origen };
+    }
+  }
+
+  // 2. Si se indicó un botId concreto, devolvemos ese bot
+  if (filtro.botId) {
+    const botPorId = resultado.bots.find((b) => b.id === filtro.botId);
+    if (botPorId) {
+      return { datos: botPorId, origen: resultado.origen };
+    }
+  }
+
+  // 3. Por defecto (ej. prueba en el panel sin filtro), devolvemos el bot activo actual
   return { datos: resultado.datos, origen: resultado.origen };
 }
 
 /**
- * Crea o actualiza un bot/empresa, lo deja como activo y lo guarda en Firebase Firestore.
+ * Crea o actualiza un bot/empresa (verificando que el número no esté repetido) y lo guarda en Firebase Firestore.
  * Qué recibe: nuevosDatos (datos del bot enviado desde el formulario).
  * Qué devuelve: una Promesa con el catálogo actualizado y el bot guardado.
  */
@@ -189,7 +208,7 @@ export async function guardarEntrenamientoNube(nuevosDatos) {
 }
 
 /**
- * Cambia cuál de los bots/empresas está seleccionado como activo para editar y atender llamadas.
+ * Cambia cuál de los bots/empresas está seleccionado en la pantalla para editarlo.
  * Qué recibe: botId (identificador del bot elegido en el desplegable).
  * Qué devuelve: una Promesa con el catálogo actualizado.
  */

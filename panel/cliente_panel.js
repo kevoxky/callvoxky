@@ -89,6 +89,20 @@ function crearBarraSelectorBotsEnPantalla() {
 
   formulario.insertBefore(contenedor, formulario.firstChild);
 
+  // Creamos también el campo para vincular un número de teléfono exclusivo a cada Bot/Empresa
+  const campoTelefono = document.createElement('div');
+  campoTelefono.className = 'campo';
+  const labelTelefono = document.createElement('label');
+  labelTelefono.htmlFor = 'numeroTelefonoBot';
+  labelTelefono.textContent = '📞 Número de teléfono exclusivo de este Bot / Empresa (Nadie más usará este número):';
+  const inputTelefono = document.createElement('input');
+  inputTelefono.type = 'tel';
+  inputTelefono.id = 'numeroTelefonoBot';
+  inputTelefono.placeholder = 'Ej. +34936944069 (Quien llame a este número hablará SIEMPRE con este Bot)';
+  campoTelefono.appendChild(labelTelefono);
+  campoTelefono.appendChild(inputTelefono);
+  formulario.insertBefore(campoTelefono, contenedor.nextSibling);
+
   selector.addEventListener('change', () => cambiarBotSeleccionado(selector.value));
   botonNuevo.addEventListener('click', prepararFormularioParaNuevoBot);
   botonEliminar.addEventListener('click', eliminarBotActual);
@@ -121,7 +135,8 @@ function actualizarOpcionesSelectorBots(listaBots = [], botActivoId = '') {
     const opcion = document.createElement('option');
     opcion.value = bot.id;
     const esActivo = bot.id === botActivoId;
-    opcion.textContent = `${esActivo ? '🟢 ' : ''}${bot.nombreNegocio} — ${bot.nombreAsistente}${esActivo ? ' (Activo en llamadas)' : ''}`;
+    const etiquetaNumero = bot.numeroTelefono ? ` [${bot.numeroTelefono}]` : ' [Sin número asignado]';
+    opcion.textContent = `${esActivo ? '🟢 ' : ''}${bot.nombreNegocio} — ${bot.nombreAsistente}${etiquetaNumero}`;
     selector.appendChild(opcion);
   }
 
@@ -136,6 +151,10 @@ function actualizarOpcionesSelectorBots(listaBots = [], botActivoId = '') {
  */
 function rellenarCamposFormulario(d = {}) {
   idBotEditandoActualmente = d.id || '';
+  const inputTel = document.getElementById('numeroTelefonoBot');
+  if (inputTel) {
+    inputTel.value = d.numeroTelefono || '';
+  }
   document.getElementById('nombreAsistente').value = d.nombreAsistente || '';
   document.getElementById('nombreNegocio').value = d.nombreNegocio || '';
   document.getElementById('vozGemini').value = d.vozGemini || 'Aoede';
@@ -290,6 +309,7 @@ async function guardarEntrenamientoDesdePantalla(evento) {
 
   const nuevosDatos = {
     id: idBotEditandoActualmente,
+    numeroTelefono: document.getElementById('numeroTelefonoBot')?.value || '',
     nombreAsistente: document.getElementById('nombreAsistente').value,
     nombreNegocio: document.getElementById('nombreNegocio').value,
     vozGemini: document.getElementById('vozGemini').value,
@@ -502,8 +522,100 @@ function colgarLlamadaDePrueba(actualizarMensaje = true) {
   }
 }
 
+/**
+ * Crea en la tarjeta del teléfono el cuadro para recibir una llamada real en el móvil vía Vonage API.
+ * Qué recibe: nada.
+ * Qué devuelve: nada.
+ */
+async function crearPanelVonageMovilEnPantalla() {
+  const tarjetaTelefono = document.querySelector('.tarjeta-telefono');
+  if (!tarjetaTelefono || document.getElementById('caja-vonage-movil')) {
+    return;
+  }
+
+  const caja = document.createElement('div');
+  caja.id = 'caja-vonage-movil';
+  caja.style.marginTop = '18px';
+  caja.style.padding = '14px';
+  caja.style.borderRadius = '10px';
+  caja.style.backgroundColor = '#f8fafc';
+  caja.style.border = '1px solid #dbe2ef';
+
+  const titulo = document.createElement('div');
+  titulo.style.fontWeight = '700';
+  titulo.style.fontSize = '0.95rem';
+  titulo.style.marginBottom = '6px';
+  titulo.textContent = '📱 3. Llamar a tu Móvil Real (Conectado por API a Vonage)';
+
+  const estadoApp = document.createElement('div');
+  estadoApp.id = 'estado-app-vonage';
+  estadoApp.style.fontSize = '0.84rem';
+  estadoApp.style.color = '#166534';
+  estadoApp.style.marginBottom = '10px';
+  estadoApp.textContent = 'Verificando aplicación en Vonage...';
+
+  const filaMovil = document.createElement('div');
+  filaMovil.style.display = 'flex';
+  filaMovil.style.gap = '8px';
+  filaMovil.style.flexWrap = 'wrap';
+
+  const inputMovil = document.createElement('input');
+  inputMovil.type = 'tel';
+  inputMovil.id = 'input-numero-movil';
+  inputMovil.placeholder = 'Tu móvil con prefijo (ej. +34612345678)';
+  inputMovil.style.flex = '1';
+  inputMovil.style.padding = '9px 12px';
+  inputMovil.style.borderRadius = '8px';
+  inputMovil.style.border = '1px solid #cbd5e1';
+
+  const botonLlamarMovil = document.createElement('button');
+  botonLlamarMovil.type = 'button';
+  botonLlamarMovil.className = 'boton boton-primario';
+  botonLlamarMovil.textContent = '📲 Llamarme al Móvil';
+
+  const avisoMovil = document.createElement('div');
+  avisoMovil.id = 'aviso-llamada-movil';
+  avisoMovil.style.fontSize = '0.85rem';
+  avisoMovil.style.marginTop = '8px';
+  avisoMovil.style.fontWeight = '600';
+
+  filaMovil.appendChild(inputMovil);
+  filaMovil.appendChild(botonLlamarMovil);
+  caja.appendChild(titulo);
+  caja.appendChild(estadoApp);
+  caja.appendChild(filaMovil);
+  caja.appendChild(avisoMovil);
+  tarjetaTelefono.appendChild(caja);
+
+  botonLlamarMovil.addEventListener('click', async () => {
+    avisoMovil.textContent = 'Solicitando llamada a Vonage API...';
+    try {
+      const resp = await fetch('/api/vonage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numeroMovil: inputMovil.value })
+      });
+      const datos = await resp.json();
+      avisoMovil.textContent = datos.ok ? datos.mensaje : `⚠️ ${datos.error}`;
+    } catch (err) {
+      avisoMovil.textContent = `❌ Error: ${err.message}`;
+    }
+  });
+
+  try {
+    const resp = await fetch('/api/vonage');
+    const info = await resp.json();
+    if (info.conectado) {
+      estadoApp.textContent = `✅ App creada automáticamente en tu Vonage: "${info.nombreApp}" (ID: ${info.applicationId.slice(0, 8)}...)`;
+    }
+  } catch (_err) {
+    estadoApp.textContent = 'Listo para conectar con Vonage.';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   crearBarraSelectorBotsEnPantalla();
+  crearPanelVonageMovilEnPantalla();
   cargarEntrenamientoEnPantalla();
   document.getElementById('formulario-entrenamiento').addEventListener('submit', guardarEntrenamientoDesdePantalla);
   document.getElementById('boton-llamar').addEventListener('click', iniciarLlamadaDePrueba);

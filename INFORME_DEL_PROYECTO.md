@@ -78,7 +78,7 @@ Buscamos en la documentación oficial actualizada de Google (finales de 2026) lo
   5. Instalamos con tu permiso `@google/genai` y `ws` (verificando 0 vulnerabilidades con `npm audit`) y creamos el **Módulo 1 (`entrenamiento/`)** junto con sus 3 pruebas automáticas (`npm test` pasó al 100%).
   6. Analizamos las mejores **alternativas a Twilio para España (`+34`)**: **Vonage**, **Telnyx** y **Voximplant** (o conectar un operador español como **Zadarma / Netelip**).
 - **Recomendación para continuar en el siguiente paso:**
-  Ya está guardado y funcionando todo el sistema con **`gemini-3.8-live-extended-thinking`** (razonamiento inteligente), **selector de múltiples empresas/bots**, **Firebase Firestore (`callvoxky`)** y el conector de llamadas de **Vonage** (`telefonia/rutas_vonage.js`). El próximo paso cuando quieras llevarlo al teléfono móvil es conectar tu número en el panel de **Vonage** apuntando a las rutas `/telefonia/vonage/respuesta` y `/telefonia/vonage/eventos`.
+  Ya está guardado, blindado por número exclusivo (`+34936944069` asignado únicamente a `Voxky — Daniel`), conectado a **Firebase (`callvoxky`)**, a **Vonage API** y desplegado en **Railway** (`https://callvoxky-servidor-production.up.railway.app`). En cuanto **Zadarma** termine de verificar tus documentos y active tu número de Barcelona `+34936944069`, solo tendrás que activar el desvío SIP en Zadarma hacia Vonage para llamar desde cualquier móvil.
 
 ---
 

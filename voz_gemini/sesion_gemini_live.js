@@ -104,7 +104,10 @@ function procesarMensajeDeGemini(respuestaGemini, eventosCliente) {
  */
 export async function crearSesionVozGemini(eventosCliente = {}) {
   const apiKey = obtenerClaveGeminiSegura();
-  const { datos: datosEntrenamiento } = await leerEntrenamientoNube();
+  const { datos: datosEntrenamiento } = await leerEntrenamientoNube({
+    numeroTelefono: eventosCliente.numeroTelefono || '',
+    botId: eventosCliente.botId || ''
+  });
   const instruccionesSistema = construirInstruccionesSistema(datosEntrenamiento);
   const modeloElegido = (process.env.GEMINI_MODELO_VOZ || MODELO_VOZ_POR_DEFECTO).trim();
   const nivelRazonamiento = (process.env.GEMINI_NIVEL_RAZONAMIENTO || NIVEL_RAZONAMIENTO_POR_DEFECTO).trim();

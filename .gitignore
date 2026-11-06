@@ -10,6 +10,10 @@
 # Datos privados de entrenamiento local (los datos reales viven en Firebase y no deben ir a Git)
 entrenamiento/datos_negocio.json
 
+# Llaves privadas generadas automáticamente por la API de Vonage
+telefonia/vonage_credenciales.json
+*.key
+
 # Dependencias instaladas (carpetas pesadas que se descargan solas)
 node_modules/
 

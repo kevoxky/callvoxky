@@ -1,7 +1,7 @@
 /**
  * Archivo: entrenamiento/gestor_entrenamiento.js
- * Qué hace: Gestiona múltiples bots o empresas (crear, seleccionar, validar, limpiar y borrar)
- *           y construye las instrucciones estrictas (sin inventar datos) para gemini-3.8-live.
+ * Qué hace: Gestiona múltiples bots o empresas (cada uno con su propio número de teléfono exclusivo)
+ *           y construye las instrucciones estrictas con razonamiento para gemini-3.8-live-extended-thinking.
  * Con qué se conecta: Lee y escribe en entrenamiento/datos_negocio.json; es usado por
  *                     entrenamiento/repositorio_firebase.js y voz_gemini/sesion_gemini_live.js.
  */
@@ -15,16 +15,17 @@ const CARPETA_ENTRENAMIENTO = path.dirname(RUTA_ARCHIVO_ACTUAL);
 const RUTA_DATOS_POR_DEFECTO = path.join(CARPETA_ENTRENAMIENTO, 'datos_negocio.json');
 
 const LIMITE_ID_BOT = 60;
+const LIMITE_TELEFONO = 30;
 const LIMITE_NOMBRE_CORTO = 80;
 const LIMITE_TEXTO_MEDIANO = 300;
-const LIMITE_CONOCIMIENTO_LARGO = 100000; // Hasta 100.000 caracteres para bases de conocimiento completas
+const LIMITE_CONOCIMIENTO_LARGO = 100000;
 
 const VOCES_PERMITIDAS_GEMINI = ['Aoede', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda', 'Orus', 'Zephyr'];
 const VOZ_POR_DEFECTO = 'Aoede';
 
 /**
  * Limpia un texto enviado por el usuario quitando espacios sobrantes y caracteres de control invisibles.
- * Qué recibe: texto (cualquier valor enviado desde el formulario) y limiteMaximo (número máximo de letras).
+ * Qué recibe: texto y limiteMaximo.
  * Qué devuelve: un texto limpio y seguro, cortado al límite permitido.
  */
 export function limpiarTextoSeguro(texto, limiteMaximo) {
@@ -33,6 +34,19 @@ export function limpiarTextoSeguro(texto, limiteMaximo) {
   }
   const textoSinControl = texto.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
   return textoSinControl.slice(0, limiteMaximo);
+}
+
+/**
+ * Normaliza un número telefónico dejando solo el signo + inicial y los dígitos (ej. "+34936944069").
+ * Qué recibe: telefonoCrudo (texto con el número).
+ * Qué devuelve: el número limpio o cadena vacía si no se asignó número.
+ */
+export function normalizarNumeroTelefono(telefonoCrudo) {
+  if (typeof telefonoCrudo !== 'string') {
+    return '';
+  }
+  const soloDigitos = telefonoCrudo.replace(/[^0-9]/g, '').slice(0, 18);
+  return soloDigitos ? `+${soloDigitos}` : '';
 }
 
 /**
@@ -53,7 +67,7 @@ export function generarIdBot(nombreNegocio, nombreAsistente) {
 }
 
 /**
- * Normaliza los campos de un bot sin exigir que estén llenos (útil cuando el formulario está en blanco).
+ * Normaliza los campos de un bot incluyendo su número de teléfono exclusivo.
  * Qué recibe: datosCrudos (objeto con los datos de un bot).
  * Qué devuelve: un objeto limpio con todos los campos del bot.
  */
@@ -63,6 +77,7 @@ export function normalizarCamposBot(datosCrudos = {}) {
 
   return {
     id: limpiarTextoSeguro(datosCrudos.id, LIMITE_ID_BOT) || '',
+    numeroTelefono: normalizarNumeroTelefono(datosCrudos.numeroTelefono || ''),
     nombreAsistente: limpiarTextoSeguro(datosCrudos.nombreAsistente, LIMITE_NOMBRE_CORTO),
     nombreNegocio: limpiarTextoSeguro(datosCrudos.nombreNegocio, LIMITE_NOMBRE_CORTO),
     tonoConversacion: limpiarTextoSeguro(datosCrudos.tonoConversacion, LIMITE_TEXTO_MEDIANO),
@@ -114,7 +129,7 @@ export function validarDatosEntrenamiento(datosCrudos) {
 }
 
 /**
- * Convierte cualquier archivo JSON (incluso el formato antiguo de un solo bot) al formato multi-empresa.
+ * Convierte cualquier archivo JSON al formato multi-empresa, asegurando que Voxky conserve su número +34936944069.
  * Qué recibe: contenidoParseado (lo que había en datos_negocio.json).
  * Qué devuelve: un objeto con { botActivoId, bots: [...] }.
  */
@@ -128,6 +143,10 @@ export function normalizarCatalogoBots(contenidoParseado = {}) {
       if (!b.id) {
         b.id = `bot_${i + 1}`;
       }
+      // Si es el bot principal de Voxky y aún no tenía número guardado, le vinculamos su número de Barcelona
+      if (b.nombreNegocio.toLowerCase() === 'voxky' && !b.numeroTelefono) {
+        b.numeroTelefono = '+34936944069';
+      }
     });
 
     const idActivo =
@@ -138,10 +157,12 @@ export function normalizarCatalogoBots(contenidoParseado = {}) {
     return { botActivoId: idActivo, bots: botsLimpios };
   }
 
-  // Si estaba en el formato de un solo bot (ej. "Daniel - Voxky"), lo conservamos como el primer bot de la lista
   const botUnico = normalizarCamposBot(contenidoParseado);
   if (botUnico.nombreAsistente || botUnico.nombreNegocio) {
     botUnico.id = botUnico.id || 'bot_voxky_daniel';
+    if (botUnico.nombreNegocio.toLowerCase() === 'voxky' && !botUnico.numeroTelefono) {
+      botUnico.numeroTelefono = '+34936944069';
+    }
     return {
       botActivoId: botUnico.id,
       bots: [botUnico]
@@ -203,7 +224,7 @@ export function escribirCatalogoEnDisco(catalogo, rutaArchivo = RUTA_DATOS_POR_D
 }
 
 /**
- * Crea un nuevo bot/empresa o actualiza uno existente, y lo deja marcado como el bot activo.
+ * Crea o actualiza un bot verificando que ningún otro bot use el mismo número de teléfono exclusivo.
  * Qué recibe: nuevosDatos (datos del bot enviado desde el formulario) y rutaArchivo (opcional).
  * Qué devuelve: los datos limpios del bot que acaba de guardarse.
  */
@@ -215,8 +236,20 @@ export function guardarEntrenamiento(nuevosDatos, rutaArchivo = RUTA_DATOS_POR_D
 
   const catalogo = leerCatalogoBots(rutaArchivo);
   const botGuardar = validacion.datosLimpios;
-  const indiceExistente = catalogo.bots.findIndex((b) => b.id === botGuardar.id);
 
+  // Regla de exclusividad: impedimos que dos empresas distintas compartan el mismo número telefónico
+  if (botGuardar.numeroTelefono) {
+    const otroBotConMismoNumero = catalogo.bots.find(
+      (b) => b.id !== botGuardar.id && b.numeroTelefono === botGuardar.numeroTelefono
+    );
+    if (otroBotConMismoNumero) {
+      throw new Error(
+        `El número ${botGuardar.numeroTelefono} ya es exclusivo de "${otroBotConMismoNumero.nombreNegocio} (${otroBotConMismoNumero.nombreAsistente})". Usa otro número distinto para esta empresa.`
+      );
+    }
+  }
+
+  const indiceExistente = catalogo.bots.findIndex((b) => b.id === botGuardar.id);
   if (indiceExistente >= 0) {
     catalogo.bots[indiceExistente] = botGuardar;
   } else {
@@ -229,8 +262,8 @@ export function guardarEntrenamiento(nuevosDatos, rutaArchivo = RUTA_DATOS_POR_D
 }
 
 /**
- * Arma las instrucciones estrictas ("System Prompt") para gemini-3.8-live prohibiendo inventar datos fuera de lo entrenado.
- * Qué recibe: datosEntrenamiento (objeto con la información real del bot/empresa activo).
+ * Arma las instrucciones estrictas ("System Prompt") para gemini-3.8-live-extended-thinking.
+ * Qué recibe: datosEntrenamiento (objeto con la información real del bot/empresa dueño del número).
  * Qué devuelve: el texto de instrucciones para Gemini.
  */
 export function construirInstruccionesSistema(datosEntrenamiento) {
