@@ -35,15 +35,20 @@ CallVoxky/
 ├── panel/                          # Pantalla web para entrenar bots y probar con micrófono
 │   ├── index.html                  # Página para gestionar empresas/bots y hacer llamadas de prueba
 │   ├── cliente_panel.js            # Selector multi-bot, captura de micrófono y audio en vivo
-│   └── estilos.css                 # Diseño limpio y claro de la pantalla
+│   ├── estilos.css                 # Diseño limpio y claro de la pantalla
+│   ├── widget.html                 # Widget limpio incrustable para portafolio (iframe)
+│   ├── cliente_widget.js           # Lógica de voz en vivo para el widget público
+│   └── estilos_widget.css          # Estilos del widget compacto
 ├── voz_gemini/                     # Conexión directa con el cerebro de voz de Google
 │   └── sesion_gemini_live.js       # Conecta el audio en vivo con gemini-3.8-live-extended-thinking
 ├── telefonia/                      # Conexión con llamadas de teléfono reales (Vonage)
-│   └── rutas_vonage.js             # Recibe la llamada móvil de Vonage y adapta el audio a 16kHz
+│   ├── rutas_vonage.js             # Recibe la llamada móvil de Vonage y adapta el audio a 16kHz
+│   └── api_vonage.js               # Sincroniza webhooks y puente SIP automáticamente con Vonage API
 ├── servidor/                       # Punto de arranque de la aplicación
 │   └── iniciar_servidor.js         # Enciende el panel web (puerto 3456) y los canales de voz
 └── tests/                          # Pruebas automáticas para verificar que todo funcione
-    └── probar_entrenamiento.test.js
+    ├── probar_entrenamiento.test.js
+    └── probar_widget_servidor.test.js
 ```
 
 ## 3. Cómo Instalarlo (Próximo paso)
